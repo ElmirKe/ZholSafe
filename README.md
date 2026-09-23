@@ -10,7 +10,7 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 4.3 DriverGuard (temporal driver-state analysis, driver-only risk) and deterministic road/driver risk fusion implemented in pure Java; JVM tests written but NOT EXECUTED in the authoring sandbox (no JVM); Android/device, real driver camera and landmark backend NOT VERIFIED. No production alerts.**
+> **Status: Stage 4.4 — Android app builds (Gradle wrapper committed); 284 core + 14 app JVM tests pass. Front camera → MediaPipe Face Landmarker → DriverGuard → combined risk → local alerts (siren, vibration, RU/KK/EN voice) and a driver screen are implemented. Run on a physical phone NOT VERIFIED yet; road `model.onnx` must still be exported. Thresholds remain EXPERIMENTAL; no field validation.**
 > Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
 > UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
 > `docs/STAGE3_TRACKING.md`, `docs/STAGE4_0_TRAJECTORY.md`,
@@ -67,7 +67,7 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 | Directory          | Responsibility |
 |--------------------|----------------|
 | `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking, Stage 4.0 image trajectory, Stage 4.1 physical diagnostics, Stage 4.2 road-only risk, Stage 4.3 DriverGuard temporal analysis + driver-only risk + combined road/driver risk fusion, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
-| `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
+| `android-app/app`  | Android Java app: CameraX road + driver cameras, MediaPipe DriverGuard backend, local alerts, driver screen (RU/KK/EN) + engineering overlay; location and ZholNet client deferred |
 | `zholnet-server`   | Spring Boot server: health endpoint, hazard event DTO + validator, module boundaries |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
 | `models`           | Where ONNX models must be placed (binaries not committed) + label files |
@@ -85,17 +85,15 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 cd zholnet-server && mvn test && mvn package
 java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8080/api/v1/health
 
-# Core Java module (JDK 17+). Gradle wrapper NOT yet committed: the authoring sandbox cannot
-# reach services.gradle.org and wrapper binaries are never fabricated.
-cd android-app && gradle :core:test
+# Core Java module + Android app (JDK 17, Android SDK 34). Gradle 8.7 wrapper committed.
+cd android-app && ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (Stage 4.2 code: detector → tracker → trajectory → physical → road-risk diagnostics; no alerts).
-# No model binaries are committed: place a legitimate export under models/road/<id>/ first
-# (models/README.md) or the app reports MODEL NOT AVAILABLE. Local/offline inference only.
-# Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
-# in the authoring environment (no Android SDK / Google Maven access); app sources were
-# compiled against API-shaped stubs only. See docs/DEVELOPMENT.md for the on-device test plan.
+# Android app (Stage 4.4): front camera → Face Landmarker → DriverGuard → combined risk → alerts;
+# rear camera → road pipeline (Stage 4.2). APK assembly EXECUTED; device run NOT VERIFIED yet.
+# The face model is downloaded + SHA-256-checked by the build. The road model is not committed:
+# export it under models/road/<id>/ (models/README.md) or the app reports MODEL NOT AVAILABLE.
+# See docs/STAGE4_4_ANDROID_DRIVER_APP.md.
 
 # AI utilities
 cd ai-training && pip install -r requirements.txt && pytest
@@ -111,7 +109,8 @@ python3 scripts/check_contracts.py
 (Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4.0 image-space trajectory ✔ (code/JVM) →
 4.1 experimental distance/TTC foundation ✔ (code/JVM; real calibration/device pending) →
 4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) →
-4.3 DriverGuard + road/driver risk fusion ✔ (code; **JVM tests written, NOT EXECUTED here — no JVM**; device/backend pending) →
+4.3 DriverGuard + road/driver risk fusion ✔ (code/JVM; 284 core tests pass) →
+4.4 Android DriverGuard backend (MediaPipe), alerts, driver screen RU/KK/EN ✔ (APK builds; device pending) →
 5 ZholNet server + PostGIS → 6 Integration/WebSocket/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
