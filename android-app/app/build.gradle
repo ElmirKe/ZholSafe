@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+def zholNetBaseUrl = providers.gradleProperty('zholnetBaseUrl')
+        .orElse(providers.environmentVariable('ZHOLNET_BASE_URL'))
+        .orElse('http://10.0.2.2:8080')
+
 android {
     namespace 'kz.zholsafe'
     compileSdk 34
@@ -12,6 +16,7 @@ android {
         targetSdk 34
         versionCode 1
         versionName '0.0.1'
+        buildConfigField 'String', 'ZHOLNET_BASE_URL', '"' + zholNetBaseUrl.get() + '"'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -39,6 +44,8 @@ android {
     androidResources {
         noCompress 'onnx'
     }
+
+    buildFeatures { buildConfig true }
 }
 
 tasks.register('syncModelAssets', Copy) {
@@ -51,7 +58,7 @@ tasks.register('syncModelAssets', Copy) {
 preBuild.dependsOn syncModelAssets
 
 // ONNX Runtime version is centralised in :ort-adapter (Stage 2.5).
-def onnxRuntimeVersion = project(':ort-adapter').ext.onnxRuntimeVersion
+def onnxRuntimeVersion = rootProject.ext.onnxRuntimeVersion
 
 dependencies {
     implementation project(':core')

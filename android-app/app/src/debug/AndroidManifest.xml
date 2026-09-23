@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug/demo only: permits HTTP to a developer-hosted ZholNet. Release keeps Android's
+         default cleartext prohibition and should use HTTPS. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

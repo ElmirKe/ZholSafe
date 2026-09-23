@@ -5,10 +5,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Location: GPS hazard events (Stage 6). Local warnings do NOT depend on it. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Network: ZholNet only. Local warnings do NOT depend on it. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- FOREGROUND_SERVICE / FOREGROUND_SERVICE_CAMERA are intentionally NOT declared: no
          foreground service exists yet. The Stage 1 pipeline runs only while MainActivity is
          started (onStart..onStop). Declare them together with the actual service (deferred 1.x). -->

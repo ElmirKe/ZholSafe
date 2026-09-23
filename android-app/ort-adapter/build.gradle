@@ -15,7 +15,7 @@ java {
 }
 
 // Single source of truth for the ONNX Runtime version consumed by :app and :smoke-test.
-ext.onnxRuntimeVersion = '1.19.2'
+ext.onnxRuntimeVersion = rootProject.ext.onnxRuntimeVersion
 
 dependencies {
     api project(':core')

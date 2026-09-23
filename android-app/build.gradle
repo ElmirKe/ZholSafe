@@ -3,5 +3,17 @@
 // :app  — Java Android application (CameraX, alerts, location, ZholNet client, UI).
 plugins {
     id 'com.android.application' version '8.5.2' apply false
-    id 'java-library' apply false
+}
+
+// Shared before subprojects are evaluated; avoids project evaluation-order coupling.
+ext.onnxRuntimeVersion = '1.19.2'
+
+// Gradle's Windows test worker can misdecode non-ASCII classpath entries. Keep generated output in
+// an isolated, checkout-derived temp directory; no source or artifact semantics are changed.
+if (System.getProperty('os.name').toLowerCase(java.util.Locale.ROOT).contains('windows')
+        && rootDir.absolutePath.find(/[^\x00-\x7F]/)) {
+    def checkoutKey = Integer.toHexString(rootDir.absolutePath.hashCode())
+    subprojects {
+        layout.buildDirectory = file("${System.getProperty('java.io.tmpdir')}/zholsafe-$checkoutKey/${project.name}")
+    }
 }

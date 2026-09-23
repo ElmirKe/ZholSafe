@@ -10,15 +10,19 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 5 ZholNet single-application server implemented with Java 21, Spring Boot,
+> **Status: Stage 6.0 Android ZholNet client foundation implemented: validated foreground location,
+> local-risk hazard bridge, asynchronous HTTP publish/nearby client and bounded metadata retry.
+> Stage 5 ZholNet server is implemented with Java 21, Spring Boot,
 > PostgreSQL/PostGIS, bounded REST nearby queries, server-time TTL, conservative deduplication and
-> compact STOMP broadcasts. LOCAL SAFETY DOES NOT DEPEND ON ZHOLNET. Android/device, real driver
+> compact STOMP broadcasts; real PostGIS runtime verification remains pending. LOCAL SAFETY DOES
+> NOT DEPEND ON ZHOLNET. Android/device, real driver
 > camera, real-road operation and production safety are NOT VERIFIED. No production alerts.**
 > Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
 > UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
 > `docs/STAGE3_TRACKING.md`, `docs/STAGE4_0_TRAJECTORY.md`,
 > `docs/STAGE4_1_DISTANCE_TTC.md`, `docs/STAGE4_2_RISK_ENGINE.md`,
-> `docs/STAGE4_3_DRIVERGUARD.md`, `docs/STAGE5_ZHOLNET.md` and `docs/ROADMAP.md`.
+> `docs/STAGE4_3_DRIVERGUARD.md`, `docs/STAGE5_ZHOLNET.md`,
+> `docs/STAGE6_0_ANDROID_ZHOLNET_CLIENT.md` and `docs/ROADMAP.md`.
 
 ## Architecture in one picture
 
@@ -31,7 +35,8 @@ Driver frames → DriverObservationProvider → TemporalDriverStateAnalyzer
 RoadRiskSnapshot + DriverRiskSnapshot → CombinedRiskEngine → CombinedRiskSnapshot
                                          (rule matrix, freshness budgets, degraded modes)
 
-Future only: AlertManager and Android ZholNet client; Stage 5 server metadata sharing is supplementary.
+RoadRiskSnapshot → HazardEventBridge → bounded async ZholNet HTTP client (supplementary only)
+Future only: final remote advisory UI/audio/map and live STOMP subscription.
 ```
 
 Stage 4.2 is road-object-only. Its physical diagnostics use explicit calibration (none
@@ -69,8 +74,8 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 
 | Directory          | Responsibility |
 |--------------------|----------------|
-| `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking, Stage 4.0 image trajectory, Stage 4.1 physical diagnostics, Stage 4.2 road-only risk, Stage 4.3 DriverGuard temporal analysis + driver-only risk + combined road/driver risk fusion, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
-| `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
+| `android-app/core` | Pure-Java local pipeline plus Stage 6.0 location/network contracts, hazard bridge, async client and bounded retry foundation |
+| `android-app/app`  | Android Java app: CameraX pipeline, fused foreground location adapter, private random source token and post-risk ZholNet wiring |
 | `zholnet-server`   | Stage 5 Spring Boot server: validation, JPA/PostGIS persistence, TTL/dedup, nearby REST, STOMP notifications, Actuator health |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
 | `models`           | Where ONNX models must be placed (binaries not committed) + label files |
@@ -94,12 +99,11 @@ docker compose up --build                              # health: /actuator/healt
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (Stage 4.2 code: detector → tracker → trajectory → physical → road-risk diagnostics; no alerts).
+# Android app (includes Stage 6.0 supplementary ZholNet bridge; local risk remains offline).
 # No model binaries are committed: place a legitimate export under models/road/<id>/ first
 # (models/README.md) or the app reports MODEL NOT AVAILABLE. Local/offline inference only.
-# Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
-# in the authoring environment (no Android SDK / Google Maven access); app sources were
-# compiled against API-shaped stubs only. See docs/DEVELOPMENT.md for the on-device test plan.
+# Open android-app/ in Android Studio (SDK 34), or run Gradle `:app:assembleDebug`.
+# Debug assembly is verified; no physical-device/camera/GPS run is claimed.
 
 # AI utilities
 cd ai-training && pip install -r requirements.txt && pytest
@@ -117,7 +121,8 @@ python3 scripts/check_contracts.py
 4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) →
 4.3 DriverGuard + road/driver risk fusion ✔ (code/JVM; device/backend pending) →
 5 ZholNet server + PostGIS ✔ (code/unit tests; real PostGIS runtime pending) →
-6 Android integration/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
+6.0 Android ZholNet client foundation ✔ (device/real server pending) → 6.1/6.2 advisory UI/map →
+7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
 

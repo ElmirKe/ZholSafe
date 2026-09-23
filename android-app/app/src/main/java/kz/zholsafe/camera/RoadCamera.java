@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
@@ -128,7 +129,7 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
         boolean hasRear;
         try {
             hasRear = p.hasCamera(rear);
-        } catch (RuntimeException e) {
+        } catch (CameraInfoUnavailableException | RuntimeException e) {
             hasRear = false;
         }
         if (!hasRear) {

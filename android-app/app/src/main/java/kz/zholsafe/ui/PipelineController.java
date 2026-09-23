@@ -14,6 +14,8 @@ import kz.zholsafe.pipeline.RoadDetectionProcessor;
 import kz.zholsafe.pipeline.SyntheticFrameSource;
 import kz.zholsafe.pipeline.TelemetryReport;
 import kz.zholsafe.pipeline.TrackingSnapshot;
+import kz.zholsafe.physical.PhysicalEstimationSnapshot;
+import kz.zholsafe.risk.RoadRiskSnapshot;
 
 import java.util.function.Supplier;
 
@@ -114,6 +116,14 @@ final class PipelineController {
 
     TrackingSnapshot latestTracking() {
         return processor == null ? null : processor.latestTracking();
+    }
+
+    PhysicalEstimationSnapshot latestPhysical() {
+        return processor == null ? null : processor.latestPhysical();
+    }
+
+    RoadRiskSnapshot latestRoadRisk() {
+        return processor == null ? null : processor.latestRoadRisk();
     }
 
     String renderTelemetry() {

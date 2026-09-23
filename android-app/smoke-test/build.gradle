@@ -22,7 +22,7 @@ dependencies {
     implementation project(':core')
     implementation project(':ort-adapter')
     // Desktop ONNX Runtime (CPU). Same Java API as onnxruntime-android; version pinned in :ort-adapter.
-    implementation "com.microsoft.onnxruntime:onnxruntime:${project(':ort-adapter').ext.onnxRuntimeVersion}"
+    implementation "com.microsoft.onnxruntime:onnxruntime:${rootProject.ext.onnxRuntimeVersion}"
 
     testImplementation platform('org.junit:junit-bom:5.10.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
