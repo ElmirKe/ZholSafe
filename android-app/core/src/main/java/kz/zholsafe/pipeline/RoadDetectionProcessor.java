@@ -6,6 +6,8 @@ import kz.zholsafe.ai.DetectorTimings;
 import kz.zholsafe.ai.Frame;
 import kz.zholsafe.ai.ModelNotAvailableException;
 import kz.zholsafe.ai.RoadDetector;
+import kz.zholsafe.config.TrackingConfig;
+import kz.zholsafe.tracking.ByteTrackInspiredTracker;
 import kz.zholsafe.logging.ZLog;
 import kz.zholsafe.model.Detection;
 
@@ -16,8 +18,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
 /**
- * Stage 2 {@link FrameProcessor}: runs the {@link RoadDetector} on the processing thread and
- * publishes a {@link DetectionSnapshot}.
+ * Stage 2/3 {@link FrameProcessor}: runs the {@link RoadDetector} then the tracker on the
+ * same processing thread; publishes separate {@link DetectionSnapshot} and
+ * {@link TrackingSnapshot} results.
  *
  * <ul>
  *   <li>{@link #load()} is called by the owner before the pipeline starts (may be slow). If it
@@ -36,6 +39,8 @@ public final class RoadDetectionProcessor implements FrameProcessor {
     private static final String TAG = "RoadDetection";
 
     private final RoadDetector detector;
+    private final ByteTrackInspiredTracker tracker;
+    private final AtomicReference<TrackingSnapshot> trackingLatest;
     private final LongSupplier clock;
     private final AtomicReference<DetectionSnapshot> latest;
     private final AtomicLong sequence = new AtomicLong();
@@ -46,13 +51,23 @@ public final class RoadDetectionProcessor implements FrameProcessor {
     private volatile String loadError = "";
 
     public RoadDetectionProcessor(RoadDetector detector) {
-        this(detector, System::nanoTime);
+        this(detector, System::nanoTime, TrackingConfig.defaults());
     }
 
     public RoadDetectionProcessor(RoadDetector detector, LongSupplier clock) {
+        this(detector, clock, TrackingConfig.defaults());
+    }
+
+    public RoadDetectionProcessor(RoadDetector detector, TrackingConfig config) {
+        this(detector, System::nanoTime, config);
+    }
+
+    public RoadDetectionProcessor(RoadDetector detector, LongSupplier clock, TrackingConfig config) {
         this.detector = Objects.requireNonNull(detector);
         this.clock = Objects.requireNonNull(clock);
+        this.tracker = new ByteTrackInspiredTracker(config);
         this.latest = new AtomicReference<>(DetectionSnapshot.unavailable(detector.info().modelId(), detector.state(), 0));
+        this.trackingLatest = new AtomicReference<>(TrackingSnapshot.unavailable(0, TrackingSnapshot.Status.NOT_STARTED));
     }
 
     /** Loads the model. Returns false (and records the diagnostic) instead of throwing. */
@@ -72,7 +87,7 @@ public final class RoadDetectionProcessor implements FrameProcessor {
     @Override
     public void process(Frame frame) throws Exception {
         if (detector.state() != DetectorState.READY) {
-            publishUnavailable();
+            publishUnavailable(frame.timestampNanos());
             throw new DetectionException("detection unavailable: detector " + detector.state()
                     + (loadError.isEmpty() ? "" : " — " + loadError));
         }
@@ -80,9 +95,9 @@ public final class RoadDetectionProcessor implements FrameProcessor {
         List<Detection> dets;
         try {
             dets = detector.detect(frame);
-        } catch (DetectionException e) {
+        } catch (DetectionException | RuntimeException e) {
             failureCount.incrementAndGet();
-            publishUnavailable();
+            publishUnavailable(frame.timestampNanos());
             throw e;
         }
         long t1 = clock.getAsLong();
@@ -93,10 +108,32 @@ public final class RoadDetectionProcessor implements FrameProcessor {
         inferenceCount.incrementAndGet();
         latest.set(new DetectionSnapshot(frame.timestampNanos(), frame.uprightWidth(), frame.uprightHeight(),
                 detector.info().modelId(), DetectorState.READY, true, dets, timings, sequence.incrementAndGet()));
+        // Same processing thread: no second frame queue, no second camera pipeline. A tracking
+        // error does not invalidate a genuinely successful detection, but is never shown as an
+        // empty successful tracking result.
+        try {
+            tracker.update(dets, frame.timestampNanos());
+            trackingLatest.set(new TrackingSnapshot(frame.timestampNanos(), frame.uprightWidth(),
+                    frame.uprightHeight(), TrackingSnapshot.Status.READY, tracker.views()));
+        } catch (RuntimeException e) {
+            trackingLatest.set(TrackingSnapshot.unavailable(frame.timestampNanos(), TrackingSnapshot.Status.TRACKER_ERROR));
+            throw e;
+        }
     }
 
     private void publishUnavailable() {
+        publishUnavailable(0);
+    }
+
+    private void publishUnavailable(long frameTimestampNanos) {
         latest.set(DetectionSnapshot.unavailable(detector.info().modelId(), detector.state(), sequence.incrementAndGet()));
+        // Freeze track state/clock: detector failure is NOT a negative observation.
+        trackingLatest.set(TrackingSnapshot.unavailable(frameTimestampNanos, TrackingSnapshot.Status.DETECTOR_UNAVAILABLE));
+    }
+
+    /** Thread-safe latest tracking result; independent of the detection snapshot. */
+    public TrackingSnapshot latestTracking() {
+        return trackingLatest.get();
     }
 
     /** Thread-safe latest snapshot (never null). */

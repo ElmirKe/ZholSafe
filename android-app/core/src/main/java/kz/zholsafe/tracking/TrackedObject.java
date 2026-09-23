@@ -24,8 +24,8 @@ import java.util.Objects;
  * @param estimatedDistance approximate distance in metres, if estimable
  * @param estimatedTtc      approximate time-to-collision in seconds, if estimable
  * @param inDrivingCorridor whether the latest box intersects the configured driving corridor
- * @param ageFrames         number of frames the track has existed
- * @param timestampNanos    timestamp of the latest update
+ * @param ageFrames         successful detector frames since creation, including misses (Stage 3)
+ * @param timestampNanos    timestamp of the latest matched observation; LOST boxes are stale (Stage 3)
  */
 public record TrackedObject(
         int trackId,

@@ -80,6 +80,14 @@ only under identical conditions (device, ORT version, provider, frames, warm-up,
 record `BenchmarkResult.toReportLine()` output under `ai-training/benchmarks/results/`. Accuracy
 (`AccuracyResult`) requires labelled ground truth. No numbers exist yet.
 
+## Stage 3 tracking verification
+
+See `docs/STAGE3_TRACKING.md` for the algorithm, integration, limitations and reproducible JVM
+commands. Stage 3 is RoadGuard tracking; DriverGuard is deferred to Stage 4.1. The Stage 2.5 real
+model desktop report is unchanged; Android build/device tracking remain NOT VERIFIED unless run on
+a configured Android SDK/device. For the overlay, an observed track shows `HORSE #17 0.82` (or
+`(tentative)`); a LOST box is not drawn, and no metres/TTC/risk is shown.
+
 ## Rules for every stage (binding)
 
 1. Inspect the existing repository first; preserve working functionality; never create a

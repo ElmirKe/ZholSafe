@@ -10,9 +10,10 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 0 — architecture and project foundation.** No neural network has been trained,
-> no model binary is included, and no performance figures exist yet (NOT MEASURED). See
-> `docs/ROADMAP.md`.
+> **Status: Stage 3 RoadGuard tracking implemented on JVM; Android/device NOT VERIFIED.**
+> Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
+> UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
+> `docs/STAGE3_TRACKING.md` and `docs/ROADMAP.md`.
 
 ## Architecture in one picture
 
@@ -48,8 +49,8 @@ Details: `docs/ARCHITECTURE.md`.
 
 | Directory          | Responsibility |
 |--------------------|----------------|
-| `android-app/core` | Pure-Java contracts (`Detection`, `TrackedObject`, `DriverState`, `RiskAssessment`, `HazardEvent`…), configuration, pipeline ports, `RiskEngine` + Stage 0 baseline, unit tests |
-| `android-app/app`  | Android Java app: CameraX, alerts, location, ZholNet client, UI (skeleton in Stage 0) |
+| `android-app/core` | Pure-Java contracts, road detection and Stage 3 tracking, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
+| `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
 | `zholnet-server`   | Spring Boot server: health endpoint, hazard event DTO + validator, module boundaries |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
 | `models`           | Where ONNX models must be placed (binaries not committed) + label files |
@@ -88,9 +89,11 @@ python3 scripts/check_contracts.py
 
 ## Development stages
 
-0 Foundation ✔ → 0.1 Contract hardening ✔ → 1/1.1 Android + CameraX frame pipeline ✔ (code; device run pending) → 2 RoadGuard ONNX detection architecture ✔ (code + JVM tests; real model & device run pending) → 2 RoadGuard (ONNX) → 3 DriverGuard →
-4 Tracking/trajectory/Risk Engine → 5 ZholNet server + PostGIS → 6 Integration + WebSocket +
-map → 7 Testing, profiling, optimisation, audit. See `docs/ROADMAP.md`.
+0/0.1 Foundation & contracts ✔ → 1/1.1 CameraX pipeline ✔ (code; device pending) →
+2/2.1 RoadGuard ONNX detection ✔ (code/JVM) → 2.5 real YOLO11n desktop/JVM smoke ✔
+(Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4 Trajectory/Risk Engine →
+4.1 DriverGuard (deferred) → 5 ZholNet server + PostGIS → 6 Integration/WebSocket/map →
+7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
 

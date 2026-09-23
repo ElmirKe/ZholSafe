@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             telemetryText.setText(controller.renderTelemetry());
-            overlay.setSnapshot(controller.latestDetections());
+            overlay.setSnapshot(controller.latestTracking());
             ui.postDelayed(this, UI_REFRESH_MS);
         }
     };
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         AssetModelFiles files = new AssetModelFiles(this);
         controller = new PipelineController(config.mode(),
                 () -> new RoadCamera(this, this, previewView),
-                () -> new OnnxRoadDetector(det.roadModelDir(), files, new OrtSessionFactory(det.executionProvider(), 2)));
+                () -> new OnnxRoadDetector(det.roadModelDir(), files, new OrtSessionFactory(det.executionProvider(), 2)), config.tracking());
 
         modeButton.setOnClickListener(v -> toggleMode());
         retryButton.setOnClickListener(v -> {

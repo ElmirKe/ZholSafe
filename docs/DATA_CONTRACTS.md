@@ -239,3 +239,29 @@ for the LIVE road camera, the source's own monotonic clock for DEMO/TEST. Rules:
   zero detections.
 - `model-spec.json` schema: see `models/README.md`; validated by `ModelSpec` (Java) and
   `ai-training/tests/test_model_specs.py` (Python) with identical rules.
+
+## Stage 3 — RoadGuard tracking (in-process only)
+
+Stage 3 now means **RoadGuard tracking**; DriverGuard implementation is deferred to Stage 4.1.
+`ObjectTracker.update(detections, sourceTimestampNanos)` is called only after a successful detector
+run; successful empty detections count as misses. Detector failure freezes tracker state and publishes
+`TrackingSnapshot.Status.DETECTOR_UNAVAILABLE` (not READY with an empty list). Tracking rejects
+nonpositive, duplicate or out-of-order source timestamps, mismatched detection timestamps and
+nonfinite/degenerate boxes before mutation; the processor publishes `TRACKER_ERROR` and rethrows.
+
+`TrackingSnapshot(frameTimestampNanos, uprightWidth, uprightHeight, status, tracks)` is immutable;
+`READY` may contain an empty list and requires positive dimensions/time. Unavailable statuses
+(`NOT_STARTED`, `DETECTOR_UNAVAILABLE`, `TRACKER_ERROR`) contain no tracks. Its `confirmedObjects()`
+returns only currently observed CONFIRMED objects, never stale LOST boxes or tentative tracks.
+`TrackView(object: TrackedObject, state: TENTATIVE|CONFIRMED|LOST, hits, missedFrames,
+ history: List<TrackObservation>)` adds immutable lifecycle metadata without changing the existing
+`TrackedObject` constructor. REMOVED tracks are discarded, not published. `TrackObservation` contains
+source timestamp, upright pixel `BoundingBox`, and confidence only, oldest first, bounded by
+`TrackingConfig.historyLength`. `TrackedObject.positionHistory` derives from these centres and is
+also bounded. For LOST tracks the box/confidence/timestamp are the last *observation*; ageFrames
+counts successful detector frames since creation. All Stage 3 physical estimates are explicitly
+`Estimate.unavailable()`; movement is UNKNOWN and corridor false until later stages.
+
+IDs increase within a tracker instance and are not reused on reset; a fresh processor starts a
+new ID namespace. Default two-pass IoU/high/low thresholds, UNKNOWN policy and capacity limits:
+`docs/STAGE3_TRACKING.md`. These are in-process additions, not changes to HazardEvent wire v1.

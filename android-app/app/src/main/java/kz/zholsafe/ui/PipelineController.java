@@ -2,6 +2,7 @@ package kz.zholsafe.ui;
 
 import kz.zholsafe.ai.RoadDetector;
 import kz.zholsafe.config.ZholSafeConfig;
+import kz.zholsafe.config.TrackingConfig;
 import kz.zholsafe.pipeline.DetectionReport;
 import kz.zholsafe.pipeline.DetectionSnapshot;
 import kz.zholsafe.pipeline.FramePipeline;
@@ -11,6 +12,7 @@ import kz.zholsafe.pipeline.PipelineTelemetry;
 import kz.zholsafe.pipeline.RoadDetectionProcessor;
 import kz.zholsafe.pipeline.SyntheticFrameSource;
 import kz.zholsafe.pipeline.TelemetryReport;
+import kz.zholsafe.pipeline.TrackingSnapshot;
 
 import java.util.function.Supplier;
 
@@ -33,16 +35,18 @@ final class PipelineController {
 
     private final Supplier<FrameSource> liveSourceFactory;
     private final Supplier<RoadDetector> detectorFactory;
+    private final TrackingConfig trackingConfig;
     private final PipelineTelemetry telemetry = new PipelineTelemetry();
     private ZholSafeConfig.OperatingMode mode;
     private FramePipeline pipeline;
     private RoadDetectionProcessor processor;
 
     PipelineController(ZholSafeConfig.OperatingMode initialMode, Supplier<FrameSource> liveSourceFactory,
-                       Supplier<RoadDetector> detectorFactory) {
+                       Supplier<RoadDetector> detectorFactory, TrackingConfig trackingConfig) {
         this.mode = initialMode;
         this.liveSourceFactory = liveSourceFactory;
         this.detectorFactory = detectorFactory;
+        this.trackingConfig = trackingConfig;
     }
 
     ZholSafeConfig.OperatingMode mode() {
@@ -68,7 +72,7 @@ final class PipelineController {
         FrameSource source = mode == ZholSafeConfig.OperatingMode.LIVE
                 ? liveSourceFactory.get()
                 : new SyntheticFrameSource(DEMO_WIDTH, DEMO_HEIGHT, DEMO_ROTATION, DEMO_FPS);
-        processor = new RoadDetectionProcessor(detectorFactory.get());
+        processor = new RoadDetectionProcessor(detectorFactory.get(), trackingConfig);
         processor.load(); // failure → processor reports MODEL NOT AVAILABLE; pipeline still runs and degrades
         pipeline = new FramePipeline(source, processor, telemetry);
         pipeline.start();
@@ -103,6 +107,10 @@ final class PipelineController {
     /** Latest detection snapshot or null when no processor exists. */
     DetectionSnapshot latestDetections() {
         return processor == null ? null : processor.latest();
+    }
+
+    TrackingSnapshot latestTracking() {
+        return processor == null ? null : processor.latestTracking();
     }
 
     String renderTelemetry() {

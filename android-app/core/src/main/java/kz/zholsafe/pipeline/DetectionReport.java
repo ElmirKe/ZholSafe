@@ -20,6 +20,7 @@ public final class DetectionReport {
         b.append(p.statusLine()).append('\n');
         if (!s.available()) {
             b.append("DETECTION UNAVAILABLE (").append(s.detectorState()).append(")\n");
+            b.append("TRACKING UNAVAILABLE (").append(p.latestTracking().status()).append(")\n");
             return b.toString();
         }
         b.append(String.format(Locale.ROOT, "INFER FPS ~%.1f  DETECTOR %.1f ms (pre %.1f / inf %.1f / post %.1f)%n",
@@ -43,6 +44,14 @@ public final class DetectionReport {
         }
         if (s.detections().isEmpty()) {
             b.append("  NO DETECTIONS\n");
+        }
+        TrackingSnapshot tracks = p.latestTracking();
+        if (!tracks.available() || tracks.frameTimestampNanos() != s.frameTimestampNanos()) {
+            b.append("TRACKING UNAVAILABLE (").append(tracks.status()).append(")\n");
+        } else {
+            b.append("TRACKS: confirmed ").append(tracks.confirmedCount())
+                    .append(" tentative ").append(tracks.tentativeCount())
+                    .append(" lost ").append(tracks.lostCount()).append('\n');
         }
         return b.toString();
     }

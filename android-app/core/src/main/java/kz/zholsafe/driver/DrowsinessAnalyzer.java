@@ -5,7 +5,7 @@ package kz.zholsafe.driver;
  *
  * <p>Pure Java, stateful, single-threaded. Thresholds (eye-closure duration, PERCLOS window)
  * come from {@link kz.zholsafe.config.DriverGuardConfig} and are EXPERIMENTAL DEMO VALUES,
- * not validated medical or regulatory thresholds. Stage 3 provides the implementation.
+ * not validated medical or regulatory thresholds. Deferred Stage 4.1 provides the implementation.
  */
 public interface DrowsinessAnalyzer {
 

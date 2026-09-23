@@ -7,7 +7,7 @@ import kz.zholsafe.model.Contracts;
  * Detector-side thresholds and model locations.
  *
  * @param roadModel              road-scene detector descriptor
- * @param driverModel            driver-face detector descriptor (may be a placeholder until Stage 3)
+ * @param driverModel            driver-face detector descriptor (may be a placeholder until deferred Stage 4.1)
  * @param confidenceThreshold    detections below this are dropped in postprocessing
  * @param nmsIouThreshold        IoU threshold for non-maximum suppression
  * @param maxDetectionsPerFrame  hard cap to bound downstream work

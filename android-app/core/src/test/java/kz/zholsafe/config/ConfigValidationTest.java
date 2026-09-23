@@ -33,6 +33,19 @@ class ConfigValidationTest {
     }
 
     @Test
+    void trackingConfigValidatesAllNewThresholdsAndBounds() {
+        TrackingConfig c = TrackingConfig.defaults();
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(0, 1, 1, 1, .3f, .7f, .4f, .6f, .3f, 10));
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(.3f, 1, 0, 1, .3f, .7f, .4f, .6f, .3f, 10));
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(.3f, 1, 1, 1, .3f, .7f, .4f, Float.NaN, .3f, 10));
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(.3f, 1, 1, 1, .3f, .7f, .4f, .6f, .6f, 10));
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(.3f, 1, 1, 1, .3f, .7f, .4f, .6f, -1f, 10));
+        assertThrows(IllegalArgumentException.class, () -> new TrackingConfig(.3f, 1, 1, 1, .3f, .7f, .4f, .6f, .3f, 0));
+        assertDoesNotThrow(() -> new TrackingConfig(c.iouMatchThreshold(), c.maxCoastFrames(), c.minHitsToConfirm(),
+                c.historyLength(), c.corridorLeftFraction(), c.corridorRightFraction(), c.corridorTopFraction()));
+    }
+
+    @Test
     void driverGuardConfigRequiresPositiveWindows() {
         assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(0L, 60_000L, 0.3f, 10_000L, 0.5f));
         assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(1500L, -1L, 0.3f, 10_000L, 0.5f));
