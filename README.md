@@ -10,12 +10,15 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 4.3 DriverGuard (temporal driver-state analysis, driver-only risk) and deterministic road/driver risk fusion implemented in pure Java; JVM tests written but NOT EXECUTED in the authoring sandbox (no JVM); Android/device, real driver camera and landmark backend NOT VERIFIED. No production alerts.**
+> **Status: Stage 5 ZholNet single-application server implemented with Java 21, Spring Boot,
+> PostgreSQL/PostGIS, bounded REST nearby queries, server-time TTL, conservative deduplication and
+> compact STOMP broadcasts. LOCAL SAFETY DOES NOT DEPEND ON ZHOLNET. Android/device, real driver
+> camera, real-road operation and production safety are NOT VERIFIED. No production alerts.**
 > Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
 > UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
 > `docs/STAGE3_TRACKING.md`, `docs/STAGE4_0_TRAJECTORY.md`,
 > `docs/STAGE4_1_DISTANCE_TTC.md`, `docs/STAGE4_2_RISK_ENGINE.md`,
-> `docs/STAGE4_3_DRIVERGUARD.md` and `docs/ROADMAP.md`.
+> `docs/STAGE4_3_DRIVERGUARD.md`, `docs/STAGE5_ZHOLNET.md` and `docs/ROADMAP.md`.
 
 ## Architecture in one picture
 
@@ -28,7 +31,7 @@ Driver frames → DriverObservationProvider → TemporalDriverStateAnalyzer
 RoadRiskSnapshot + DriverRiskSnapshot → CombinedRiskEngine → CombinedRiskSnapshot
                                          (rule matrix, freshness budgets, degraded modes)
 
-Future only: AlertManager on the combined risk; ZholNet events → optional cloud map.
+Future only: AlertManager and Android ZholNet client; Stage 5 server metadata sharing is supplementary.
 ```
 
 Stage 4.2 is road-object-only. Its physical diagnostics use explicit calibration (none
@@ -68,7 +71,7 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 |--------------------|----------------|
 | `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking, Stage 4.0 image trajectory, Stage 4.1 physical diagnostics, Stage 4.2 road-only risk, Stage 4.3 DriverGuard temporal analysis + driver-only risk + combined road/driver risk fusion, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
 | `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
-| `zholnet-server`   | Spring Boot server: health endpoint, hazard event DTO + validator, module boundaries |
+| `zholnet-server`   | Stage 5 Spring Boot server: validation, JPA/PostGIS persistence, TTL/dedup, nearby REST, STOMP notifications, Actuator health |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
 | `models`           | Where ONNX models must be placed (binaries not committed) + label files |
 | `database`         | PostGIS schema design (`schema/001_init.sql`) |
@@ -81,9 +84,10 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 ## Build / run (what is possible today)
 
 ```bash
-# ZholNet server (JDK 21 + Maven)
-cd zholnet-server && mvn test && mvn package
-java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8080/api/v1/health
+# ZholNet server (JDK 21 + Maven, PostgreSQL/PostGIS)
+cp .env.example .env                                   # choose a local demo password
+docker compose up --build                              # health: /actuator/health
+# or: cd zholnet-server && mvn test && mvn package     # requires an external PostGIS DB to run
 
 # Core Java module (JDK 17+). Gradle wrapper NOT yet committed: the authoring sandbox cannot
 # reach services.gradle.org and wrapper binaries are never fabricated.
@@ -111,8 +115,9 @@ python3 scripts/check_contracts.py
 (Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4.0 image-space trajectory ✔ (code/JVM) →
 4.1 experimental distance/TTC foundation ✔ (code/JVM; real calibration/device pending) →
 4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) →
-4.3 DriverGuard + road/driver risk fusion ✔ (code; **JVM tests written, NOT EXECUTED here — no JVM**; device/backend pending) →
-5 ZholNet server + PostGIS → 6 Integration/WebSocket/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
+4.3 DriverGuard + road/driver risk fusion ✔ (code/JVM; device/backend pending) →
+5 ZholNet server + PostGIS ✔ (code/unit tests; real PostGIS runtime pending) →
+6 Android integration/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
 

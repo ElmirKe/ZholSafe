@@ -8,14 +8,19 @@
   "required": ["eventId", "vehicleId", "hazardType", "confidence", "risk", "latitude", "longitude", "timestamp"],
   "properties": {
     "eventId":    { "type": "string", "minLength": 1, "description": "Client-generated UUID; server de-duplicates on it." },
-    "vehicleId":  { "type": "string", "minLength": 1, "description": "Self-declared; not trusted." },
-    "hazardType": { "type": "string", "enum": ["PERSON", "DOG", "HORSE", "COW", "SHEEP", "GOAT", "CAMEL", "UNKNOWN"] },
+    "vehicleId":  { "type": "string", "minLength": 1, "description": "Legacy name for an anonymous, preferably rotating source token; untrusted." },
+    "hazardType": { "type": "string", "enum": ["PERSON", "DOG", "HORSE", "COW", "SHEEP", "GOAT", "CAMEL", "STOPPED_VEHICLE", "OBSTACLE", "OTHER", "UNKNOWN"] },
     "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
     "risk":       { "type": "number", "minimum": 0, "maximum": 1 },
     "latitude":   { "type": "number", "minimum": -90, "maximum": 90 },
     "longitude":  { "type": "number", "minimum": -180, "maximum": 180 },
     "timestamp":  { "type": "string", "format": "date-time" },
     "status":     { "type": "string", "enum": ["ACTIVE", "EXPIRED", "CONFIRMED", "DISMISSED"], "default": "ACTIVE" },
-    "evidenceReference": { "type": ["string", "null"], "description": "Reserved for optional future evidence snapshots. Not used in MVP." }
+    "schemaVersion": { "type": "integer", "enum": [1], "default": 1 },
+    "severity": { "type": "string", "enum": ["NORMAL", "CAUTION", "WARNING", "CRITICAL"] },
+    "headingDegrees": { "type": "number", "minimum": 0, "exclusiveMaximum": 360 },
+    "approximateDistanceMeters": { "type": "number", "exclusiveMinimum": 0 },
+    "ttcSeconds": { "type": "number", "minimum": 0 },
+    "evidenceReference": { "type": "null", "description": "Legacy reserved field. Stage 5 rejects non-null evidence references and accepts no media." }
   }
 }

@@ -1,5 +1,5 @@
 /**
- * websocket — reserved module boundary. See docs/ARCHITECTURE.md → ZholNet Server. Implemented in
- * Stage 5/6; nothing here yet by design.
+ * Stage 5 compact STOMP broadcast. REST nearby lookup remains authoritative for geography;
+ * per-client geographic subscription filtering is deferred to Stage 6.
  */
 package kz.zholsafe.server.websocket;

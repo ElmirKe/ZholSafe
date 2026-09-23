@@ -378,21 +378,22 @@ uses one thread of its own (`zs-demo-source`). Executors are terminated on `stop
 
 ## 11. ZholNet Server
 
-Package root `kz.zholsafe.server` with boundaries `vehicle/ hazard/ alert/ geospatial/
-analytics/ websocket/ api/ config/`. Stage 0 provides: application class, `GET /api/v1/health`,
-`HazardEventDto` (contract v1), `HazardEventValidator` (pure), `HazardType`/`HazardStatus`,
-documented security extension points, `application.yml` with env-driven settings and no secrets.
-Persistence (PostgreSQL + PostGIS), WebSocket and geospatial queries are Stage 5/6.
+Package root `kz.zholsafe.server` remains one Spring Boot application. Stage 5 adds validated
+hazard ingestion, JPA/PostGIS persistence, Flyway migration, server-time TTL, conservative
+same-source deduplication, bounded `ST_DWithin` nearby lookup, Actuator health and compact STOMP
+broadcasts. REST nearby lookup is authoritative; per-client WebSocket geography is deferred.
 
-Trust model: `vehicleId` is self-declared; inbound events from the server are untrusted on the
+Trust model: the legacy `vehicleId` wire field is an untrusted, anonymous/rotating source token;
+it is not returned in public event DTOs. Inbound events from the server are untrusted on the
 vehicle side too (they never feed the local Risk Engine as facts — future stages may surface them
 as advisory notices only).
 
 ## 12. Communication
 
 - Vehicle → Server: HTTPS REST `POST /api/v1/hazards` (compact JSON `HazardEvent` v1, no video).
-- Server → Vehicle: WebSocket `/ws/hazards` for nearby-hazard notifications.
-- Optional evidence snapshots: reserved field `evidenceReference`; **not** part of the MVP.
+- Server → Vehicle: Stage 5 STOMP `/ws/hazards` → `/topic/hazards` compact global broadcast;
+  geographic subscription filtering is deferred to Stage 6.
+- Evidence snapshots are not accepted in Stage 5; media and biometrics are never persisted.
 
 ## 13. Modes
 
@@ -405,7 +406,7 @@ labelled as demo in the UI; no performance claims may be derived from demo playb
 - Exact YOLO variant/size and ONNX Runtime execution provider (NNAPI vs CPU) — Stage 2, by measurement.
 - Driver model type (classifier vs. landmarks) — deferred Stage 4.3.
 - Map library for the web monitor (Leaflet planned) — Stage 6.
-- Migration tool for the database (Flyway/Liquibase) — Stage 5.
+- Production authentication, abuse controls and cross-vehicle corroboration.
 
 ## Stage 2.5 — module split for the real-model smoke test
 

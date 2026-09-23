@@ -37,7 +37,8 @@ class HazardEventValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"PERSON", "DOG", "HORSE", "COW", "SHEEP", "GOAT", "CAMEL", "UNKNOWN"})
+    @ValueSource(strings = {"PERSON", "DOG", "HORSE", "COW", "SHEEP", "GOAT", "CAMEL",
+            "STOPPED_VEHICLE", "OBSTACLE", "OTHER", "UNKNOWN"})
     void acceptsEveryV1HazardTypeIncludingCanonicalUnknown(String type) {
         assertTrue(validator.validate(withType(type)).valid(), type);
     }
@@ -98,6 +99,16 @@ class HazardEventValidatorTest {
     @Test
     void rejectsNullBody() {
         assertFalse(validator.validate(null).valid());
+    }
+
+    @Test
+    void rejectsNonFiniteOptionalDiagnosticsAndEvidenceReference() {
+        HazardEventDto invalid = new HazardEventDto("e", "anon", "HORSE", 0.8f, 0.7f,
+                43d, 76d, TS, "ACTIVE", "image://not-accepted", 1, "WARNING",
+                Float.POSITIVE_INFINITY, 0f, Float.NaN);
+        HazardEventValidator.Result result = validator.validate(invalid);
+        assertFalse(result.valid());
+        assertEquals(4, result.errors().size(), result.errors().toString());
     }
 
     @Test

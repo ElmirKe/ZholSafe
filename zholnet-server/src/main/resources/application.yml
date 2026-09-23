@@ -1,21 +1,44 @@
 spring:
   application:
     name: zholnet-server
+  datasource:
+    url: ${ZHOLNET_DB_URL:jdbc:postgresql://localhost:5432/zholnet}
+    username: ${ZHOLNET_DB_USER:zholnet}
+    password: ${ZHOLNET_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
 
 server:
   port: ${ZHOLNET_PORT:8080}
 
+# EXPERIMENTAL / MVP CONFIGURATION — operational heuristics, not regulatory safety thresholds.
 zholnet:
-  contract-version: 1
-  # Active hazard expiration (Stage 5). Experimental default.
-  hazard-expiration-minutes: ${ZHOLNET_HAZARD_EXPIRATION_MINUTES:30}
-  # Default nearby-hazard query radius in metres (Stage 5).
-  nearby-radius-meters: ${ZHOLNET_NEARBY_RADIUS_METERS:5000}
-  # Database (Stage 5). Values come from the environment; NO secrets in this file.
-  # datasource:
-  #   url: ${ZHOLNET_DB_URL:jdbc:postgresql://localhost:5432/zholnet}
-  #   username: ${ZHOLNET_DB_USER}
-  #   password: ${ZHOLNET_DB_PASSWORD}
+  hazards:
+    default-ttl: ${ZHOLNET_DEFAULT_TTL:PT30M}
+    cleanup-interval: ${ZHOLNET_CLEANUP_INTERVAL:PT5M}
+    deduplication-window: ${ZHOLNET_DEDUP_WINDOW:PT8S}
+    deduplication-radius-meters: ${ZHOLNET_DEDUP_RADIUS_METERS:12}
+    maximum-nearby-radius-meters: ${ZHOLNET_MAX_NEARBY_RADIUS_METERS:10000}
+    maximum-nearby-results: ${ZHOLNET_MAX_NEARBY_RESULTS:100}
+    websocket-endpoint: ${ZHOLNET_WS_ENDPOINT:/ws/hazards}
+    websocket-topic: ${ZHOLNET_WS_TOPIC:/topic/hazards}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 logging:
   level:

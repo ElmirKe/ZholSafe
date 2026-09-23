@@ -231,20 +231,21 @@ JSON schema: `tests/contracts/hazard-event.v1.schema.json`; example:
 | Field             | JSON type | Constraint | Trust |
 |-------------------|-----------|------------|-------|
 | eventId           | string    | non-blank; client UUID | dedupe key |
-| vehicleId         | string    | non-blank  | **untrusted / self-declared** |
-| hazardType        | string    | exactly one of `PERSON, DOG, HORSE, COW, SHEEP, GOAT, CAMEL, UNKNOWN` (case-sensitive) | any other value is **rejected**; `UNKNOWN` is a legitimate canonical value, not a catch-all for malformed input |
+| vehicleId         | string    | non-blank  | legacy name for **untrusted anonymous/rotating source token**; never returned publicly |
+| hazardType        | string    | `PERSON, DOG, HORSE, COW, SHEEP, GOAT, CAMEL, STOPPED_VEHICLE, OBSTACLE, OTHER, UNKNOWN` (case-sensitive) | server vocabulary is broader than current detector support; malformed values are rejected |
 | confidence        | number    | [0,1]      | self-reported |
 | risk              | number    | [0,1]      | self-reported |
 | latitude          | number    | [-90,90]   | |
 | longitude         | number    | [-180,180] | |
 | timestamp         | string    | RFC 3339 UTC | client clock |
 | status            | string    | optional; if present exactly one of `ACTIVE, EXPIRED, CONFIRMED, DISMISSED` (client sends `ACTIVE`; absent ⇒ `ACTIVE`) | any other value is **rejected**; server-owned afterwards |
-| evidenceReference | string/null | optional | reserved; **not used in MVP** |
+| schemaVersion / severity | integer / string | optional v1 / engineering severity | omitted severity derives conservatively from legacy `risk` |
+| headingDegrees / approximateDistanceMeters / ttcSeconds | number | optional finite diagnostics | heading [0,360), distance >0, TTC >=0 |
+| evidenceReference | null | optional legacy field | non-null evidence references are rejected; no media accepted |
 
-**Forward-compatibility policy (v1):** the server validates enum values strictly against the v1
-list. A newer client sending a class outside v1 is rejected (HTTP 400 in Stage 5) — that is the
-intended signal to bump the contract version. `HazardType.fromWire()` is a lenient reader for
-persisted data and is *not* used for request validation. All numeric fields must be finite.
+**Forward-compatibility policy (v1):** the server validates enum values strictly against the
+documented Stage 5 network vocabulary. `HazardType.fromWire()` is a lenient reader for persisted
+data and is *not* used for request validation. All numeric fields must be finite.
 
 Server-side lifecycle fields (not on the wire from the vehicle): `receivedAt, expiresAt,
 confirmationCount, clusterId` — see `database/schema/001_init.sql`. These enable future
