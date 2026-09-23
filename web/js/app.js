@@ -51,6 +51,7 @@ const els = {
   sideRoad: $('#side-road'),
   sideRoadTag: $('#side-road-tag'),
   sideDist: $('#side-dist'),
+  sideDriveMode: $('#side-drive-mode'),
   sideScore: $('#side-score'),
   feed: $('#feed'),
   sheet: $('#report-sheet'),
@@ -269,9 +270,18 @@ async function startTrip() {
     index: new FatigueIndex(performance.now()),
     fatigueLevel: 'ok',
     lastFatigueSay: -Infinity,
+    // Без GPS (ноутбук на демо) остаёмся в режиме «Трасса».
+    mode: settings.driveMode === 'city' ? 'city' : 'highway',
+    autoMode: 'highway',
+    slowSince: null,
+    fastSince: null,
   });
 
-  trip.motion = new MotionMonitor(() => fatigueEvent('weave', 'Виляние: резкая коррекция руля'), () => trip.speed);
+  // В городе повороты и перестроения — это не виляние, не считаем.
+  trip.motion = new MotionMonitor(
+    () => trip.mode === 'highway' && fatigueEvent('weave', 'Виляние: резкая коррекция руля'),
+    () => trip.speed,
+  );
   // Подписываемся всегда: без разрешения данных просто не будет (статус виден в панели).
   trip.motion.start();
   motionAllowed.then((ok) => ok || logEvent('info', 'Нет доступа к датчикам движения'));
@@ -428,11 +438,47 @@ const SAY = {
 };
 const describe = (h) => (h.kind === 'livestock' ? `${h.species}, ≈${h.distance} м` : `≈${h.distance} м`);
 
-function renderRoad(hazards, now) {
-  drawHazards(els.roadCanvas, els.roadVideo, hazards, settings.warnDistance);
+const CITY_WARN_M = 50;
+const CITY_PERSON_M = 30;
+const MODE_LABEL = { highway: 'Трасса', city: 'Город' };
 
+function updateDriveMode(now) {
+  let mode = settings.driveMode;
+  if (mode === 'auto') {
+    const v = trip.speed; // м/с из GPS
+    if (v != null) {
+      if (v < 13.9) {
+        trip.slowSince ??= now;
+        trip.fastSince = null;
+        if (now - trip.slowSince > 20000) trip.autoMode = 'city';
+      } else if (v > 16.7) {
+        trip.fastSince ??= now;
+        trip.slowSince = null;
+        if (now - trip.fastSince > 30000) trip.autoMode = 'highway';
+      } else {
+        trip.slowSince = trip.fastSince = null;
+      }
+    }
+    mode = trip.autoMode;
+  }
+  if (mode !== trip.mode) {
+    trip.mode = mode;
+    logEvent('info', `Режим «${MODE_LABEL[mode]}»`);
+  }
+  els.sideDriveMode.textContent = MODE_LABEL[trip.mode] + (settings.driveMode === 'auto' ? ' · авто' : '');
+}
+
+function renderRoad(allHazards, now) {
+  const city = trip.mode === 'city';
+  const warnDistance = city ? CITY_WARN_M : settings.warnDistance;
+  // В городе люди на тротуарах — не опасность: учитываем только тех, кто на полосе и близко.
+  for (const h of allHazards) h.ignored = city && h.kind === 'person' && (!h.inPath || h.distance > CITY_PERSON_M);
+  const hazards = allHazards.filter((h) => !h.ignored);
+  drawHazards(els.roadCanvas, els.roadVideo, allHazards, warnDistance, city);
+
+  const prefix = `${MODE_LABEL[trip.mode]} · `;
   const nearest = hazards[0];
-  if (nearest && nearest.distance <= settings.warnDistance) {
+  if (nearest && nearest.distance <= warnDistance) {
     trip.lastNear = now;
     trip.near = nearest;
   }
@@ -445,7 +491,7 @@ function renderRoad(hazards, now) {
     els.banner.hidden = false;
     els.banner.dataset.kind = shown.kind;
     els.bannerText.textContent = text;
-    setPill(els.pillRoad, 'danger', `${shown.label} · ≈${shown.distance} м`);
+    setPill(els.pillRoad, 'danger', `${prefix}${shown.label} · ≈${shown.distance} м`);
     // Новая тревога — или тип опасности сменился (был скот, появился человек).
     if (!trip.roadAlert || trip.alertKind !== shown.kind) {
       trip.hazards++;
@@ -460,7 +506,7 @@ function renderRoad(hazards, now) {
     }
   } else {
     els.banner.hidden = true;
-    setPill(els.pillRoad, nearest ? 'warn' : 'ok', nearest ? `${nearest.label} · ≈${nearest.distance} м` : 'Дорога чистая');
+    setPill(els.pillRoad, nearest ? 'warn' : 'ok', prefix + (nearest ? `${nearest.label} · ≈${nearest.distance} м` : 'дорога чистая'));
     trip.alertKind = null;
   }
   trip.roadAlert = alerting;
@@ -482,6 +528,7 @@ function autoReport(hazard, now) {
 
 function tick() {
   els.stTime.textContent = fmtDuration(Date.now() - trip.startedAt);
+  updateDriveMode(performance.now());
   updateFatigue(performance.now());
   els.sideMotion.textContent = trip.motion?.available ? 'работают' : 'нет данных';
   els.stRoad.textContent = trip.hazards;

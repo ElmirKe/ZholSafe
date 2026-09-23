@@ -162,6 +162,7 @@
           <div class="panel">
             <div class="panel-head"><span>Опасность впереди</span><span class="tag" id="side-road-tag">—</span></div>
             <div class="big-status" id="side-road">—</div>
+            <div class="kv"><span>Режим дороги</span><b id="side-drive-mode">—</b></div>
             <div class="kv"><span>Дистанция (оценка)</span><b id="side-dist">—</b></div>
             <div class="kv"><span>Уверенность модели</span><b id="side-score">—</b></div>
           </div>
@@ -231,6 +232,15 @@
         </div>
 
         <div class="group">
+          <label class="row col">
+            <span class="row-head"><span>Где едем</span></span>
+            <select data-setting="driveMode">
+              <option value="auto">Определять по скорости</option>
+              <option value="highway">Трасса</option>
+              <option value="city">Город</option>
+            </select>
+            <small class="muted">В городе предупреждаем только о людях прямо на полосе движения и ближе 30 м — пешеходы на тротуарах не мешают. Авто: медленнее 50 км/ч 20 секунд — город, быстрее 60 км/ч 30 секунд — трасса.</small>
+          </label>
           <label class="row col">
             <span class="row-head"><span>Камеры</span></span>
             <select data-setting="cameraMode">

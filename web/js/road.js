@@ -14,6 +14,20 @@ export const KINDS = {
   person: { label: 'Человек', color: '#A78BFA' },
 };
 const NEAR_COLOR = '#FF3B5C';
+const IGNORED_COLOR = 'rgba(234, 242, 255, .35)';
+
+// Полоса движения в кадре: трапеция по центру нижней половины (доли ширины/высоты).
+// Человек считается «на полосе», если его ноги (низ рамки) внутри неё.
+const PATH = { top: 0.5, topHalf: 0.12, bottomHalf: 0.3 };
+
+export function inPath(box, vw, vh) {
+  const footY = (box.originY + box.height) / vh;
+  if (footY < PATH.top) return false;
+  const t = Math.min(1, (footY - PATH.top) / (1 - PATH.top));
+  const half = PATH.topHalf + (PATH.bottomHalf - PATH.topHalf) * t;
+  const footX = (box.originX + box.width / 2) / vw;
+  return Math.abs(footX - 0.5) <= half;
+}
 
 export class RoadMonitor {
   constructor(detector) {
@@ -42,6 +56,7 @@ export class RoadMonitor {
           species: species.name,
           score,
           box,
+          inPath: inPath(box, vw, vh),
           distance: Math.max(5, Math.round(meters / 10) * 10),
         };
       })
@@ -50,19 +65,40 @@ export class RoadMonitor {
   }
 }
 
-export function drawHazards(canvas, video, hazards, warnDistance) {
-  const { ctx, s, ox, oy } = prepCanvas(canvas, video);
+function drawPath(ctx, s, ox, oy, vw, vh) {
+  const pt = (fx, fy) => [ox + fx * vw * s, oy + fy * vh * s];
+  ctx.save();
+  ctx.setLineDash([8, 8]);
+  ctx.strokeStyle = 'rgba(167, 139, 250, .6)';
+  ctx.fillStyle = 'rgba(167, 139, 250, .07)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(...pt(0.5 - PATH.topHalf, PATH.top));
+  ctx.lineTo(...pt(0.5 + PATH.topHalf, PATH.top));
+  ctx.lineTo(...pt(0.5 + PATH.bottomHalf, 1));
+  ctx.lineTo(...pt(0.5 - PATH.bottomHalf, 1));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+// В городе рисуем полосу движения, а людей вне её — бледными (их не учитываем).
+export function drawHazards(canvas, video, hazards, warnDistance, city = false) {
+  const { ctx, s, ox, oy, vw, vh } = prepCanvas(canvas, video);
+  if (city) drawPath(ctx, s, ox, oy, vw, vh);
   ctx.font = '600 13px Inter, sans-serif';
   ctx.textBaseline = 'top';
   for (const h of hazards) {
-    const color = h.distance <= warnDistance ? NEAR_COLOR : KINDS[h.kind].color;
+    const color = h.ignored ? IGNORED_COLOR : h.distance <= warnDistance ? NEAR_COLOR : KINDS[h.kind].color;
     const x = ox + h.box.originX * s;
     const y = oy + h.box.originY * s;
     const w = h.box.width * s;
     const bh = h.box.height * s;
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = h.ignored ? 1.5 : 3;
     ctx.strokeRect(x, y, w, bh);
+    if (h.ignored) continue;
 
     const what = h.kind === 'livestock' ? `Скот: ${h.species}` : 'Человек';
     const text = `${what} · ≈${h.distance} м · ${Math.round(h.score * 100)}%`;

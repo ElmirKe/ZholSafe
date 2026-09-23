@@ -8,6 +8,7 @@ const DEFAULTS = {
   vibrate: true,
   autoReport: true,
   cameraMode: 'auto',
+  driveMode: 'auto',
   glassesMode: 'auto',
   showDemo: false,
 };
