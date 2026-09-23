@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: zholnet-server
+
+server:
+  port: ${ZHOLNET_PORT:8080}
+
+zholnet:
+  contract-version: 1
+  # Active hazard expiration (Stage 5). Experimental default.
+  hazard-expiration-minutes: ${ZHOLNET_HAZARD_EXPIRATION_MINUTES:30}
+  # Default nearby-hazard query radius in metres (Stage 5).
+  nearby-radius-meters: ${ZHOLNET_NEARBY_RADIUS_METERS:5000}
+  # Database (Stage 5). Values come from the environment; NO secrets in this file.
+  # datasource:
+  #   url: ${ZHOLNET_DB_URL:jdbc:postgresql://localhost:5432/zholnet}
+  #   username: ${ZHOLNET_DB_USER}
+  #   password: ${ZHOLNET_DB_PASSWORD}
+
+logging:
+  level:
+    kz.zholsafe: INFO

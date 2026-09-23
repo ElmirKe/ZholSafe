@@ -1,0 +1,52 @@
+# --- build outputs ---
+build/
+out/
+target/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.apk
+*.aab
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+local.properties
+
+# --- Gradle / Maven ---
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- AI artefacts (never commit binaries or datasets) ---
+*.onnx
+*.pt
+*.pth
+*.tflite
+ai-training/runs/
+ai-training/datasets/*/
+!ai-training/datasets/README.md
+demo/video/
+
+# --- secrets / env ---
+.env
+*.pem
+*.key
+*.jks
+*.keystore
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,27 @@
+# Canonical ZholSafe road-hazard class registry.
+# Index = model output class id. Order matters; append new classes at the END so that previously
+# exported models keep valid label files.
+#
+# Mirrors: android-app/core/.../model/ObjectClass.java  and  models/road/zholsafe-road-classes.txt
+classes:
+  - name: person
+    category: human
+    initial_target: true
+  - name: dog
+    category: animal
+    initial_target: true
+  - name: horse
+    category: animal
+    initial_target: true
+  - name: cow
+    category: animal
+    initial_target: true
+  - name: sheep
+    category: animal
+    initial_target: true
+  - name: goat
+    category: animal
+    initial_target: false   # custom data needed
+  - name: camel
+    category: animal
+    initial_target: false   # custom data needed

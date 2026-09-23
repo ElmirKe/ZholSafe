@@ -1,0 +1,30 @@
+// Pure-JVM module: NO Android dependencies allowed. Verified by unit tests running on the JVM.
+plugins {
+    id 'java-library'
+}
+
+group = 'kz.zholsafe'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    // Java 17 language level: records + sealed types, and fully supported by AGP 8 desugaring
+    // on minSdk 26. (Java 21 is used server-side; Android toolchain support for 21 is not
+    // assumed at this stage.)
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging { events 'passed', 'failed', 'skipped' }
+}

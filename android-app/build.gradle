@@ -1,0 +1,7 @@
+// Root build for the ZholSafe vehicle application.
+// :core — pure Java (no Android), holds data contracts, Risk Engine, pipeline interfaces.
+// :app  — Java Android application (CameraX, alerts, location, ZholNet client, UI).
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+    id 'java-library' apply false
+}

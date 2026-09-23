@@ -1,0 +1,9 @@
+# Full training/export stack. Install only on a training machine (GPU recommended).
+-r requirements.txt
+ultralytics>=8.2
+torch>=2.1
+torchvision>=0.16
+onnxruntime>=1.17      # for validating exported models in Python; NOT used at production runtime
+onnxsim>=0.4
+opencv-python-headless>=4.8
+albumentations>=1.3

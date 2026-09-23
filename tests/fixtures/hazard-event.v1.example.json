@@ -1,0 +1,11 @@
+{
+  "eventId": "3f2b6e0a-6d8e-4c0b-9b1e-1a2b3c4d5e6f",
+  "vehicleId": "DEMO-01",
+  "hazardType": "HORSE",
+  "confidence": 0.94,
+  "risk": 0.91,
+  "latitude": 43.24,
+  "longitude": 76.91,
+  "timestamp": "2026-09-23T07:00:00Z",
+  "status": "ACTIVE"
+}

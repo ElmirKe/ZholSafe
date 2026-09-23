@@ -1,0 +1,8 @@
+.venv/
+runs/
+datasets/*/
+!datasets/README.md
+*.pt
+*.onnx
+__pycache__/
+.pytest_cache/

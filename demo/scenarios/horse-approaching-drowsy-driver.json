@@ -1,0 +1,14 @@
+{
+  "name": "horse-approaching-drowsy-driver",
+  "description": "Horse enters driving corridor from the right while the driver's eyes are closed. Expected escalation: CAUTION -> WARNING -> CRITICAL.",
+  "frameWidth": 1280,
+  "frameHeight": 720,
+  "frameIntervalMillis": 100,
+  "steps": [
+    { "t": 0,    "detections": [{ "class": "horse", "confidence": 0.62, "box": [1100, 380, 1250, 520] }], "driver": { "faceDetected": true, "eyesClosed": false } },
+    { "t": 500,  "detections": [{ "class": "horse", "confidence": 0.81, "box": [950, 360, 1150, 560] }],  "driver": { "faceDetected": true, "eyesClosed": false } },
+    { "t": 1000, "detections": [{ "class": "horse", "confidence": 0.90, "box": [800, 340, 1050, 600] }],  "driver": { "faceDetected": true, "eyesClosed": true } },
+    { "t": 1500, "detections": [{ "class": "horse", "confidence": 0.94, "box": [650, 320, 950, 650] }],   "driver": { "faceDetected": true, "eyesClosed": true } },
+    { "t": 2500, "detections": [{ "class": "horse", "confidence": 0.95, "box": [500, 300, 850, 700] }],   "driver": { "faceDetected": true, "eyesClosed": true } }
+  ]
+}

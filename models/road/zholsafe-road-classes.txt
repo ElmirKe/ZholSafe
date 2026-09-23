@@ -1,0 +1,7 @@
+person
+dog
+horse
+cow
+sheep
+goat
+camel

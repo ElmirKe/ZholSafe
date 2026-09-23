@@ -1,0 +1,8 @@
+# Example training configuration (Stage 2 will use it). Values are starting points, not tuned.
+model: yolov8n.pt          # small model for on-device inference; evaluate n/s in Stage 2
+imgsz: 640
+epochs: 50
+batch: 16
+data: ../datasets/road_v0/data.yaml   # produced by datasets/prepare_road_dataset.py
+project: runs/road
+name: v0
