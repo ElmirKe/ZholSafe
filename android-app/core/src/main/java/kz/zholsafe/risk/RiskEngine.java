@@ -17,9 +17,11 @@ package kz.zholsafe.risk;
  *   <li>Detection ≠ risk: a high-confidence hazard far from the corridor is not CRITICAL on its own.</li>
  *   <li>All weights/thresholds come from configuration, never literals in the engine.</li>
  * </ul>
- * The full algorithm is implemented in Stage 4.2; Stage 0 ships the contract and a minimal
- * baseline implementation ({@link BaselineRiskEngine}) so that the pipeline can be wired and
- * tested end-to-end.
+ * Stage 0's scalar/combined-driver contract remains source-compatible. Stage 4.2 evaluates
+ * source-aligned ROAD snapshots through {@link RoadRiskEvaluator} and reuses RiskLevel/RiskReason;
+ * it cannot safely reinterpret RiskInput's timestamp-free scalar tracked values as Stage 4.1
+ * physical evidence. The legacy baseline remains for existing callers/tests; it is NOT the
+ * road-only diagnostic path and does not authorize DriverGuard or production alerts.
  */
 public interface RiskEngine {
 

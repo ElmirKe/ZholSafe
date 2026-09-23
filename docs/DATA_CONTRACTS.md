@@ -326,3 +326,30 @@ probability**; method quality and sample gates are configurable in `PhysicalEsti
 and experimental. All snapshot lists and prior registries are copied, histories are numeric,
 per-track, bounded and cleared on failure/removal/source reset. FOV-derived and opt-in unvalidated
 prior distances stay `LOW` and cannot yield metric TTC under default `MEDIUM` gates.
+
+
+## Stage 4.2 — road-only engineering risk contracts (in-process, not probability)
+
+`RoadRiskEvaluator.evaluate(tracking,trajectory,physical)` consumes synchronized immutable
+Stage 3/4.0/4.1 snapshots. `RoadRiskEngine` is stateless and leaves the legacy
+`RiskEngine.evaluate(RiskInput)`, `BaselineRiskEngine`, `RiskAssessment`, `RiskConfig`,
+`TrackedObject`, `VehicleContext`, DriverState and hazard-event wire v1 unchanged. It reuses
+existing `RiskLevel` (NORMAL<CAUTION<WARNING<CRITICAL) and extends `RiskReason` enum with
+road-specific reason codes. No model confidence or engineering score is a collision probability.
+
+| Contract | Meaning/invariants |
+|---|---|
+| `NormalizedDrivingCorridor` | Pure normalized upright trapezoid; valid centre/top/half-widths; `CorridorRelation.OUTSIDE/NEAR/INTERSECTING/CENTRAL`. Inclusive bbox-touch boundary; no lane claim. |
+| `RoadRiskConfig` | Immutable finite score bands, strictly increasing TTC bands, bounded named contributions, positive finite prediction horizon/motion gates, measured-quality minimum. All defaults EXPERIMENTAL. |
+| `RiskEvidence` | Enum type/source/quality; numeric evidence requires finite value and type-matched unit; nonnumeric flags carry NaN/NONE; physical failure flags include `PhysicalReason`. No mixed metres, seconds, fractions or probability claims. |
+| `RiskComponents` | Explicit bounded corridor/trajectory/relativeClosing/ttc/appearance/classModifier engineering terms; capped sum [0,1], NOT probability. |
+| `ObjectRiskAssessment` | Current confirmed track ID/class/source timestamp; RiskLevel, bounded engineeringScore, quality, named components, copied evidence/reasons. Non-NORMAL requires structured reasons. |
+| `RoadRiskSnapshot` | source nanoseconds/upright dimensions/upstream statuses; READY list copied, global level = max object level, highest-score then lowest-ID tie; NORMAL has no hazard track. Non-READY list empty with `highestLevel=Optional.empty` and no track ID. |
+
+A successful empty road is READY/empty/NORMAL. Tracking, trajectory, physical-processor,
+lineage and engine errors are distinct non-READY statuses and **NOT NORMAL**. A READY physical
+snapshot with per-object `NO_CALIBRATION` is operational: the risk evaluator may use
+LOW-quality image evidence but must not invent metric values. LOST/tentative tracks are excluded
+from active object risk. Each per-object score is a deterministic engineering severity indicator,
+not a statistically calibrated probability or a driver-facing warning. See
+`docs/STAGE4_2_RISK_ENGINE.md` for formula, defaults, policy gates and synthetic examples.

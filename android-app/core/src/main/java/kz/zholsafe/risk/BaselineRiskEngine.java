@@ -15,10 +15,11 @@ import java.util.Set;
 /**
  * STAGE 0 BASELINE — intentionally simple, fully explainable, configuration-driven.
  *
- * <p>This is NOT the final Stage 4.2 algorithm. It exists so that the contract is exercised by
- * real code and tests, and so that Stage 1–3 can wire the pipeline against a working engine.
- * Stage 4.2 will replace the scoring internals (not the interface) with trajectory-aware logic
- * and calibration hooks.
+ * <p>This is NOT the Stage 4.2 road-only algorithm. It remains source-compatible for historical
+ * RiskEngine/RiskInput callers and tests. Stage 4.2's {@link RoadRiskEngine} consumes aligned
+ * tracking/trajectory/physical snapshots, rather than repurposing the legacy aggregate's
+ * driver + scalar tracked fields without source or quality metadata. Do not use this baseline
+ * as the Stage 4.2 pipeline's risk diagnostic.
  *
  * <p>Scoring (all numbers from {@link RiskConfig}):
  * <ul>

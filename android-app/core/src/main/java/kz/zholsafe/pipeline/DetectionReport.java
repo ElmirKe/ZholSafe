@@ -6,6 +6,9 @@ import kz.zholsafe.physical.PhysicalEstimationSnapshot;
 import kz.zholsafe.physical.PhysicalObjectEstimate;
 import kz.zholsafe.physical.TtcEstimate;
 import kz.zholsafe.tracking.TrackState;
+import kz.zholsafe.risk.ObjectRiskAssessment;
+import kz.zholsafe.risk.RiskLevel;
+import kz.zholsafe.risk.RoadRiskSnapshot;
 import kz.zholsafe.trajectory.ObjectTrajectory;
 
 import java.util.Locale;
@@ -28,6 +31,7 @@ public final class DetectionReport {
             b.append("TRACKING UNAVAILABLE (").append(p.latestTracking().status()).append(")\n");
             b.append("IMAGE TRAJECTORY UNAVAILABLE (").append(p.latestTrajectory().status()).append(")\n");
             b.append("PHYSICAL ESTIMATION UNAVAILABLE (").append(p.latestPhysical().status()).append(")\n");
+            b.append("ROAD RISK UNAVAILABLE (").append(p.latestRoadRisk().status()).append(")\n");
             return b.toString();
         }
         b.append(String.format(Locale.ROOT, "INFER FPS ~%.1f  DETECTOR %.1f ms (pre %.1f / inf %.1f / post %.1f)%n",
@@ -97,6 +101,20 @@ public final class DetectionReport {
                 appendTtc(b, "metric TTC", object.metricTtc());
                 appendTtc(b, "optical TTC (uncalibrated)", object.imageScaleTtc());
                 b.append('\n');
+            }
+        }
+        RoadRiskSnapshot risk = p.latestRoadRisk();
+        if (!risk.available() || risk.frameTimestampNanos() != s.frameTimestampNanos()) {
+            b.append("ROAD RISK UNAVAILABLE (").append(risk.status()).append(")\n");
+        } else {
+            b.append("ROAD RISK ").append(risk.highestLevel().orElseThrow())
+                    .append(" (EXPERIMENTAL ENGINEERING SEVERITY, NOT PROBABILITY / NO ALERT)\n");
+            int shownRisk = 0;
+            for (ObjectRiskAssessment object : risk.objects()) {
+                if (object.level() == RiskLevel.NORMAL || shownRisk++ >= 3) continue;
+                b.append("  ").append(object.objectClass()).append(" #").append(object.trackId())
+                        .append(' ').append(object.level()).append(" [").append(object.evidenceQuality())
+                        .append("] ").append(object.reasons()).append('\n');
             }
         }
         return b.toString();

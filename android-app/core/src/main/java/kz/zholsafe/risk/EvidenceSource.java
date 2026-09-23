@@ -1,0 +1,4 @@
+package kz.zholsafe.risk;
+
+public enum EvidenceSource { TRACKING, IMAGE_TRAJECTORY, METRIC_RANGE, METRIC_TTC,
+    OPTICAL_EXPANSION, CLASS_PRIOR, PHYSICAL_STATUS }

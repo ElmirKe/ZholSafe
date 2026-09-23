@@ -77,7 +77,7 @@ Package root: `kz.zholsafe`
 | `trajectory`   | core   | Stage 4.0 `TrajectoryEstimator`; legacy `DistanceEstimator`/`TtcEstimator` remain unavailable | 0 / 4.0 |
 | `physical`     | core   | Experimental calibration, ground/size depth, metric range regression, separate TTC contracts/processor | 4.1 |
 | `driver`       | core   | `DriverObservation`, `DriverState`, `HeadPose`, `DrowsinessAnalyzer`           | 0 (impl: deferred 4.3) |
-| `risk`         | core   | `RiskEngine`, `RiskInput`, `RiskAssessment`, `RiskLevel`, `RiskReason`, `VehicleContext`, `BaselineRiskEngine` | 0 (final algo: 4.2) |
+| `risk`         | core   | Legacy `RiskEngine`/`RiskInput`/`BaselineRiskEngine` retained; Stage 4.2 `RoadRiskEvaluator`/`RoadRiskEngine`, `RoadRiskSnapshot`, `RiskLevel`/`RiskReason` | 0 / 4.2 |
 | `config`       | core   | `ZholSafeConfig` root + `DetectorConfig`, `TrackingConfig`, `RiskConfig`, `DriverGuardConfig`, `NetworkConfig` | 0 |
 | `pipeline`     | core   | Ports: `FrameSource`, `LatestFrameQueue`, `AlertSink`, `HazardEventPublisher`, `PipelineState` | 0 |
 | `logging`      | core   | `ZLog` façade + standard `Event` names                                          | 0 |
@@ -99,7 +99,8 @@ CameraX ImageProxy ──(camera analysis executor)──► CameraFrameAdapter 
    ──► ObjectTracker.update → TrackingSnapshot (Stage 3)
    ──► TrajectoryEstimator.estimate → TrajectorySnapshot (Stage 4.0 IMAGE ONLY)
    ──► PhysicalEstimationProcessor → PhysicalEstimationSnapshot (Stage 4.1 diagnostics)
-   ──► [RiskEngine fusion / AlertSink / HazardEventPublisher: future, NOT connected in 4.1]
+   ──► RoadRiskEngine → RoadRiskSnapshot (Stage 4.2 engineering diagnostic ONLY)
+   ──► [DriverGuard fusion / AlertSink / HazardEventPublisher: future, NOT connected in 4.2]
 ```
 
 **Detection ≠ Risk.** A detection states presence; risk is a function of class weight,
@@ -259,8 +260,8 @@ distance and TTC remain unavailable, movement UNKNOWN and corridor false. The ov
 currently observed tentative/confirmed tracks, labelled with their IDs; LOST boxes are stale and
 never drawn. See `docs/STAGE3_TRACKING.md` for defaults, failure/timestamp/cap policies and tests.
 Stage 4.0 adds image trajectory downstream; Stage 4.1 adds experimental physical diagnostics
-without changing these Stage 3 fields. Stage 4.2 risk fusion remains future work. No trajectory
-estimator ran in Stage 3 itself.
+without changing these Stage 3 fields. Stage 4.2's road-only snapshot diagnostics also leave
+them unchanged. No trajectory estimator ran in Stage 3 itself.
 
 ### 5.4 Stage 4.0 image-space trajectory (implemented in core; device NOT VERIFIED)
 
@@ -283,7 +284,20 @@ an independent LOW-quality uncalibrated optical TTC; a conflicting TTC invalidat
 diagnostic, never averages. Missing calibration, inaccurate flat-road assumption, stale/lost track,
 upstream failure and absent evidence yield explicit unavailability. The processor holds only
 bounded numeric samples and runs inline, without a second queue/camera/thread; the Risk Engine
-and warnings are unchanged. See `docs/STAGE4_1_DISTANCE_TTC.md`.
+and warnings are unchanged. The Stage 4.2 evaluator reads this snapshot without modifying
+Stage 4.1 semantics. See `docs/STAGE4_1_DISTANCE_TTC.md`.
+
+### 5.6 Stage 4.2 explainable ROAD risk (experimental core; no alerts/device validation)
+
+`RoadDetectionProcessor` evaluates READY aligned tracking/image/physical snapshots on the same
+processing thread. `RoadRiskEngine` is a stateless pure-Java road-only evaluator; it reuses the
+Stage 0 `RiskLevel` and `RiskReason` but takes richer snapshots through `RoadRiskEvaluator`
+because `RiskInput` has neither source/quality/failure lineage nor a road-only driver-free
+contract. The legacy baseline remains source compatible; no Stage 4.2 driver fusion is performed.
+READY output is a per-confirmed-object severity with named components/structured evidence and a
+max frame level; failures have **no** level, not NORMAL. Geometry is an approximate normalized
+trapezoid, not lane detection; metric and optical TTC remain distinct. Engineering scores are
+NOT collision probabilities and are not alerts. See `docs/STAGE4_2_RISK_ENGINE.md`.
 
 ## 6. DriverGuard (deferred Stage 4.3)
 
@@ -297,9 +311,11 @@ regulatory thresholds** (stated in code and docs).
 - Interface: `RiskEngine.evaluate(RiskInput) → RiskAssessment`.
 - Pure, deterministic, configuration-driven (`RiskConfig`), explainable (`RiskReason` list is
   mandatory for any level above `NORMAL`, enforced by the record constructor).
-- Stage 0 ships `BaselineRiskEngine` so the pipeline can be wired and the contract tests are
-  real. Stage 4.2 replaces its scoring internals — **not** the interface — and adds calibration
-  hooks. There is exactly one Risk Engine for LIVE and DEMO.
+- Stage 0 `BaselineRiskEngine` remains source compatible for legacy scalar/combined input;
+  Stage 4.2 **does not call** it in the road pipeline, because `RiskInput` cannot express
+  synchronized source/quality/failure lineage and includes deferred driver fields. Stage 4.2
+  reuses `RiskLevel`/`RiskReason` through the snapshot-specific `RoadRiskEvaluator` and
+  `RoadRiskEngine`, identically for LIVE and DEMO. No driver fusion or alert path is added.
 
 ## 8. Distance and TTC policy
 
@@ -309,11 +325,13 @@ Stage 4.1 deliberately adds **separate** immutable `physical.DistanceEstimate`,
 `RangeRateEstimate`, `TtcEstimate`, and `PhysicalEstimationSnapshot` contracts with source time,
 method, units, evidence quality, bounds where known and explicit NaN/reason for missing data.
 `RoadDetectionProcessor` publishes these diagnostics after Stage 4.0 on its existing processing
-thread. They are NOT copied into `TrackedObject`, RiskInput or warning logic. App defaults to no
+thread. Stage 4.2 reads their separate snapshot for road-only risk but does NOT copy values
+into `TrackedObject`, legacy RiskInput or warning logic. App defaults to no
 calibration/prior and can show only uncalibrated optical-expansion TTC, explicitly labelled.
 Optional FOV-derived intrinsics and class-size guesses are experimental, never safety-certified.
 No source calibration → no metric range/rate/TTC. See `docs/STAGE4_1_DISTANCE_TTC.md` for geometry,
-assumptions, source-time gating and failure modes; Stage 4.2 fusion is not implemented.
+assumptions, source-time gating and failure modes. Stage 4.2 evaluator details are in
+`docs/STAGE4_2_RISK_ENGINE.md`; driver fusion remains deferred.
 
 ## 9. Threading model
 
@@ -321,7 +339,7 @@ assumptions, source-time gating and failure modes; Stage 4.2 fusion is not imple
 |-----------------------|--------------------------------------------------|-------------------------------------|
 | UI (main)             | Views, alert rendering/audio triggers            | run inference, block on network     |
 | Camera analysis executor (`zs-camera-analysis`, 1 thread) | ImageProxy → `Frame` (pool copy), `FramePipeline.onFrame` → `LatestFrameQueue.offer`, close ImageProxy | do heavy work; block; hold ImageProxy |
-| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker → image-space estimator → physical diagnostics (serial) | touch views; run in parallel (serial by design until measured) |
+| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker → image-space estimator → physical diagnostics → road risk evaluator (serial) | touch views; run in parallel (serial by design until measured) |
 | Risk thread (or inline after inference, bounded) | `RiskEngine`, `DrowsinessAnalyzer` | block on I/O          |
 | Network thread        | `ZholNetApi`, `ZholNetWebSocket`, offline queue  | influence the alert path            |
 

@@ -129,6 +129,26 @@ ai-training tests passed**; hazard-event schema fixture check passed. Official G
 **NOT EXECUTED** (no Gradle wrapper/JUnit distribution available). Android build/device:
 **NOT EXECUTED**; no runtime inference or physical accuracy verified on a device.
 
+## Stage 4.2 road-only risk verification
+
+`docs/STAGE4_2_RISK_ENGINE.md` gives the complete score decomposition, corridor geometry,
+quality/TTC gates, no-calibration mode, global max policy, example calculations and failure
+semantics. Run `RoadRiskEngineTest` and `RoadDetectionProcessorTest`, then prior core tests via
+Gradle `:core:test` **when available**. The local JDK 17/JUnit-compatible shim is only a
+temporary runner, **not** official Gradle/JUnit. Stage 2.5 31-image inference need not be rerun
+(no inference/decoder/model changes). Android `:app:assembleDebug` remains **NOT EXECUTED**
+unless it is actually run. No live risk accuracy, warnings, calibrated probabilities or device
+behaviour are claimed. Before production, separately validate camera intrinsics/pose, real road
+corridor/grades, ground-truth range and closing, cue reliability, false warnings and driver UX.
+
+Stage 4.2 sandbox results: temporary JDK 17 `javac` + JUnit-compatible reflection **shim**
+(**NOT official Gradle/JUnit**): **218 core test methods, 0 failures** (Stage 0–4.2), plus
+**5 synthetic image-frame smoke methods, 0 failures** (NOT the 31-image model inference suite).
+`PipelineController` compiled against core with JDK 17. **9 Python ai-training tests passed**;
+hazard-event v1 fixture contract check passed. Official Gradle/JUnit: **NOT EXECUTED** (Gradle
+binary/wrapper unavailable). **ANDROID BUILD: NOT EXECUTED**; no device, calibration/field
+risk-validation or alert testing occurred.
+
 ## Rules for every stage (binding)
 
 1. Inspect the existing repository first; preserve working functionality; never create a

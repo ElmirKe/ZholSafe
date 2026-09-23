@@ -44,5 +44,18 @@ public enum RiskReason {
 
     // ---- system ----
     ROAD_DETECTOR_UNAVAILABLE,
-    LOW_CONFIDENCE_ONLY
+    LOW_CONFIDENCE_ONLY,
+
+    // ---- Stage 4.2 road-only diagnostics (never driver risk or collision probability) ----
+    OBJECT_NEAR_DRIVING_CORRIDOR,
+    MOVING_TOWARD_CORRIDOR,
+    PREDICTED_CORRIDOR_ENTRY,
+    APPARENT_APPROACH,
+    APPARENT_RECEDE,
+    RAPID_CLOSING,
+    SHORT_METRIC_TTC,
+    OPTICAL_EXPANSION,
+    LARGE_LIVESTOCK,
+    TTC_ESTIMATES_CONFLICT,
+    PHYSICAL_EVIDENCE_UNAVAILABLE
 }
