@@ -30,6 +30,8 @@ export const loadFace = () =>
     baseOptions: { modelAssetPath: FACE_MODEL },
     runningMode: 'VIDEO',
     numFaces: 1,
+    outputFaceBlendshapes: true, // зевание
+    outputFacialTransformationMatrixes: true, // наклон головы
   });
 
 export const loadDetector = () =>

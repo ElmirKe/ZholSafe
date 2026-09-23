@@ -34,6 +34,9 @@ const els = {
   sideEyesTag: $('#side-eyes-tag'),
   sideEar: $('#side-ear'),
   sideThr: $('#side-thr'),
+  sideMode: $('#side-mode'),
+  sidePitch: $('#side-pitch'),
+  sideYawns: $('#side-yawns'),
   earFill: $('#ear-fill'),
   earMark: $('#ear-mark'),
   sideRoad: $('#side-road'),
@@ -243,12 +246,15 @@ async function startTrip() {
     lastRoadBeep: 0,
     lastReportAt: -Infinity,
     zoneKey: null,
+    yawns: 0,
+    glasses: false,
     pos: null,
     eyeLevel: 'ok',
     roadLevel: 'ok',
   });
 
   els.feed.innerHTML = '<li class="empty">Событий пока нет</li>';
+  els.sideYawns.textContent = '0';
   els.stage.dataset.main = hasRoad() || !trip.driverStream ? 'road' : 'driver';
   updatePlaceholders();
   setPill(els.pillEyes, 'idle', trip.driverStream ? 'Глаза: поиск лица…' : 'Камера водителя выкл.');
@@ -311,7 +317,7 @@ function loop() {
 
   if (trip.driverStream && els.driverVideo.readyState >= 2 && now - trip.lastFaceT >= 66) {
     trip.lastFaceT = now;
-    renderDriver(fatigue.process(els.driverVideo, now, settings.closedSec * 1000), now);
+    renderDriver(fatigue.process(els.driverVideo, now, settings.closedSec * 1000, settings.glassesMode), now);
   }
   if (hasRoad() && els.roadVideo.readyState >= 2 && now - trip.lastRoadT >= 100) {
     trip.lastRoadT = now;
@@ -331,15 +337,18 @@ const EYE_STATES = {
   noface: ['idle', 'Лицо не видно', '—'],
   calibrating: ['info', 'Калибровка глаз…', 'КАЛИБРОВКА'],
   open: ['ok', 'Глаза открыты', 'НОРМА'],
+  glasses: ['ok', 'Очки: слежу за головой', 'ОЧКИ'],
   closed: ['warn', 'Глаза закрыты', 'ВНИМАНИЕ'],
+  headdown: ['warn', 'Голова опущена', 'ВНИМАНИЕ'],
   sleep: ['danger', 'Микросон!', 'ТРЕВОГА'],
 };
 
 function renderDriver(r, now) {
-  drawEyes(els.driverCanvas, els.driverVideo, r.landmarks, r.state);
+  drawEyes(els.driverCanvas, els.driverVideo, r.landmarks, r.state, r.glasses);
 
   const [level, text, tag] = EYE_STATES[r.state];
-  const label = r.state === 'closed' ? `${text} ${(r.closedFor / 1000).toFixed(1).replace('.', ',')} с` : text;
+  const timed = r.state === 'closed' || r.state === 'headdown';
+  const label = timed ? `${text} ${(r.closedFor / 1000).toFixed(1).replace('.', ',')} с` : text;
   setPill(els.pillEyes, level, label);
   els.sideEyes.textContent = label;
   setTag(els.sideEyesTag, level, tag);
@@ -349,6 +358,19 @@ function renderDriver(r, now) {
   els.earFill.style.width = r.ear == null ? '0' : pct(r.ear);
   els.earFill.style.background = `var(--${level === 'idle' || level === 'info' ? 'accent' : level})`;
   els.earMark.style.left = pct(r.threshold);
+  els.sideMode.textContent = r.glasses ? 'Очки · по голове' : 'По глазам';
+  els.sidePitch.textContent = r.pitchDelta == null ? '—' : `${r.pitchDelta > 0 ? '+' : ''}${Math.round(r.pitchDelta)}°`;
+
+  if (r.glasses !== trip.glasses) {
+    trip.glasses = r.glasses;
+    logEvent('info', r.glasses ? 'Тёмные очки: слежу за наклоном головы' : 'Глаза снова видны');
+  }
+  if (r.yawned) {
+    trip.yawns++;
+    els.sideYawns.textContent = trip.yawns;
+    logEvent('warn', 'Зевание');
+    if (r.tooManyYawns) alarm.say('Вы часто зеваете. Сделайте перерыв.', settings);
+  }
   trip.eyeLevel = level === 'danger' ? 'danger' : level === 'warn' ? 'warn' : 'ok';
 
   const sleeping = r.state === 'sleep';

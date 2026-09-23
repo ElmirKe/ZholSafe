@@ -8,6 +8,7 @@ const DEFAULTS = {
   vibrate: true,
   autoReport: true,
   cameraMode: 'auto',
+  glassesMode: 'auto',
 };
 
 function read() {

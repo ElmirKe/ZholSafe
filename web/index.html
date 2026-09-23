@@ -55,7 +55,7 @@
             <span class="feat-icon danger">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><path d="M4 4l16 16"/></svg>
             </span>
-            <div><b>Микросон</b><small>Сирена, если глаза закрыты дольше <span data-out="closedSec">1,5 сек</span></small></div>
+            <div><b>Микросон</b><small>Сирена, если глаза закрыты дольше <span data-out="closedSec">1,5 сек</span>. В тёмных очках — по наклону головы</small></div>
           </li>
           <li>
             <span class="feat-icon warn">
@@ -125,7 +125,7 @@
           <div class="alarm" id="alarm-sleep" hidden>
             <div>
               <div class="alarm-title">ПРОСНИТЕСЬ!</div>
-              <p>Глаза закрыты слишком долго.<br>Остановитесь и отдохните.</p>
+              <p>Похоже, вы засыпаете.<br>Остановитесь и отдохните.</p>
               <small>Нажмите, чтобы закрыть</small>
             </div>
           </div>
@@ -139,6 +139,9 @@
             <div class="meter"><div class="meter-fill" id="ear-fill"></div><div class="meter-mark" id="ear-mark"></div></div>
             <div class="kv"><span>EAR (открытость глаз)</span><b id="side-ear">—</b></div>
             <div class="kv"><span>Порог после калибровки</span><b id="side-thr">—</b></div>
+            <div class="kv"><span>Режим</span><b id="side-mode">—</b></div>
+            <div class="kv"><span>Наклон головы</span><b id="side-pitch">—</b></div>
+            <div class="kv"><span>Зевков за поездку</span><b id="side-yawns">0</b></div>
           </div>
           <div class="panel">
             <div class="panel-head"><span>Опасность впереди</span><span class="tag" id="side-road-tag">—</span></div>
@@ -219,6 +222,15 @@
               <option value="road">Только дорога</option>
             </select>
             <small class="muted">Многие телефоны не дают включить обе камеры одновременно — тогда выберите одну.</small>
+          </label>
+          <label class="row col">
+            <span class="row-head"><span>Солнцезащитные очки</span></span>
+            <select data-setting="glassesMode">
+              <option value="auto">Определять автоматически</option>
+              <option value="on">Я в тёмных очках</option>
+              <option value="off">Без очков</option>
+            </select>
+            <small class="muted">Через тёмные линзы камера телефона глаз не видит. В очках приложение следит за наклоном головы (голова «клюёт» при микросне) и за зеванием.</small>
           </label>
         </div>
 
