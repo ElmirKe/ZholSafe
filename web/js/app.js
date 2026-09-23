@@ -3,6 +3,8 @@ import { FatigueMonitor, drawEyes } from './fatigue.js';
 import { RoadMonitor, drawHazards, LIVESTOCK } from './road.js';
 import { openDriverCamera, openRoadCamera, stopStream } from './cameras.js';
 import { settings, bindSettings } from './settings.js';
+import { FatigueIndex, FACTOR_LABELS } from './fatigue-index.js';
+import { MotionMonitor } from './motion.js';
 import { fmtDuration, fmtDistance } from './util.js';
 import * as alarm from './alarm.js';
 import * as geo from './map.js';
@@ -21,6 +23,7 @@ const els = {
   roadVideo: $('#road-video'),
   roadCanvas: $('#road-canvas'),
   roadEmpty: $('#road-empty'),
+  pillFatigue: $('#pill-fatigue'),
   pillEyes: $('#pill-eyes'),
   pillRoad: $('#pill-road'),
   pillZone: $('#pill-zone'),
@@ -28,7 +31,13 @@ const els = {
   bannerText: $('#road-banner-text'),
   alarmSleep: $('#alarm-sleep'),
   stTime: $('#st-time'),
-  stSleep: $('#st-sleep'),
+  stFatigue: $('#st-fatigue'),
+  sideFatigue: $('#side-fatigue'),
+  sideFatigueTag: $('#side-fatigue-tag'),
+  fatigueFill: $('#fatigue-fill'),
+  factors: $('#factors'),
+  sideMotion: $('#side-motion'),
+  demoRow: $('#demo-row'),
   stRoad: $('#st-road'),
   sideEyes: $('#side-eyes'),
   sideEyesTag: $('#side-eyes-tag'),
@@ -204,7 +213,10 @@ document.addEventListener('visibilitychange', () => {
 function watchPosition() {
   if (!navigator.geolocation) return;
   trip.geoWatch = navigator.geolocation.watchPosition(
-    (p) => (trip.pos = { lat: p.coords.latitude, lng: p.coords.longitude }),
+    (p) => {
+      trip.pos = { lat: p.coords.latitude, lng: p.coords.longitude };
+      trip.speed = p.coords.speed;
+    },
     () => {},
     { enableHighAccuracy: true, maximumAge: 10000 },
   );
@@ -212,6 +224,7 @@ function watchPosition() {
 
 async function startTrip() {
   alarm.unlock();
+  const motionAllowed = MotionMonitor.requestPermission();
   els.start.disabled = true;
   els.status.textContent = 'Загружаем ИИ-модели…';
   let face;
@@ -251,7 +264,19 @@ async function startTrip() {
     pos: null,
     eyeLevel: 'ok',
     roadLevel: 'ok',
+    prevEyeState: null,
+    speed: null,
+    index: new FatigueIndex(performance.now()),
+    fatigueLevel: 'ok',
+    lastFatigueSay: -Infinity,
   });
+
+  trip.motion = new MotionMonitor(() => fatigueEvent('weave', 'Виляние: резкая коррекция руля'), () => trip.speed);
+  // Подписываемся всегда: без разрешения данных просто не будет (статус виден в панели).
+  trip.motion.start();
+  motionAllowed.then((ok) => ok || logEvent('info', 'Нет доступа к датчикам движения'));
+  els.demoRow.hidden = !settings.showDemo;
+  renderFatigue({ score: 0, level: 'ok', factors: [] });
 
   els.feed.innerHTML = '<li class="empty">Событий пока нет</li>';
   els.sideYawns.textContent = '0';
@@ -290,6 +315,7 @@ function stopTrip() {
   trip.wakeLock = null;
   if (trip.geoWatch != null) navigator.geolocation.clearWatch(trip.geoWatch);
   trip.geoWatch = null;
+  trip.motion?.stop();
   alarm.silence();
   els.alarmSleep.hidden = true;
   els.banner.hidden = true;
@@ -297,7 +323,7 @@ function stopTrip() {
   els.drive.hidden = true;
   els.idle.hidden = false;
   toast(
-    `Поездка ${fmtDuration(Date.now() - trip.startedAt)} · микросон: ${trip.microsleeps} · опасности: ${trip.hazards}`,
+    `Поездка ${fmtDuration(Date.now() - trip.startedAt)} · макс. усталость: ${trip.index.max} · микросон: ${trip.microsleeps} · опасности: ${trip.hazards}`,
     6000,
   );
 }
@@ -328,7 +354,7 @@ function loop() {
     tick();
   }
 
-  const levels = [trip.eyeLevel, trip.roadLevel, els.pillZone.hidden ? 'ok' : 'warn'];
+  const levels = [trip.eyeLevel, trip.roadLevel, trip.fatigueLevel, els.pillZone.hidden ? 'ok' : 'warn'];
   els.drive.dataset.level = levels.includes('danger') ? 'danger' : levels.includes('warn') ? 'warn' : 'ok';
   requestAnimationFrame(loop);
 }
@@ -366,6 +392,7 @@ function renderDriver(r, now) {
     logEvent('info', r.glasses ? 'Тёмные очки: слежу за наклоном головы' : 'Глаза снова видны');
   }
   if (r.yawned) {
+    trip.index.add('yawn', now);
     trip.yawns++;
     els.sideYawns.textContent = trip.yawns;
     logEvent('warn', 'Зевание');
@@ -373,10 +400,18 @@ function renderDriver(r, now) {
   }
   trip.eyeLevel = level === 'danger' ? 'danger' : level === 'warn' ? 'warn' : 'ok';
 
+  trip.index.recordHead(r.yaw, now);
+  if (r.state !== trip.prevEyeState) {
+    if (r.state === 'headdown') fatigueEvent('nod', 'Кивок головы');
+    if (r.state === 'closed' && !r.glasses) fatigueEvent('longblink', 'Долгое моргание');
+  }
+  trip.prevEyeState = r.state;
+
   const sleeping = r.state === 'sleep';
   els.alarmSleep.hidden = !sleeping;
   if (sleeping && !trip.sleeping) {
     trip.microsleeps++;
+    trip.index.add('microsleep', now);
     logEvent('danger', 'Микросон водителя');
     alarm.say('Проснитесь! Остановитесь и отдохните.', settings);
   }
@@ -437,7 +472,8 @@ function autoReport(hazard, now) {
 
 function tick() {
   els.stTime.textContent = fmtDuration(Date.now() - trip.startedAt);
-  els.stSleep.textContent = trip.microsleeps;
+  updateFatigue(performance.now());
+  els.sideMotion.textContent = trip.motion?.available ? 'работают' : 'нет данных';
   els.stRoad.textContent = trip.hazards;
 
   if (!trip.pos) return;
@@ -456,6 +492,77 @@ function tick() {
     trip.zoneKey = null;
   }
 }
+
+/* ---------- Индекс усталости ---------- */
+
+function fatigueEvent(type, text) {
+  if (!trip.active) return;
+  const now = performance.now();
+  trip.index.add(type, now);
+  logEvent('warn', text);
+  updateFatigue(now);
+}
+
+const FATIGUE_TAGS = { ok: 'НОРМА', warn: 'УСТАЛОСТЬ', danger: 'ОПАСНО' };
+
+function renderFatigue({ score, level, factors }) {
+  const top = factors[0] ? ` · ${FACTOR_LABELS[factors[0].key].toLowerCase()}` : '';
+  setPill(els.pillFatigue, level, `Усталость ${score}${top}`);
+  els.stFatigue.textContent = score;
+  els.sideFatigue.textContent = score;
+  setTag(els.sideFatigueTag, level, FATIGUE_TAGS[level]);
+  els.fatigueFill.style.width = `${score}%`;
+  els.fatigueFill.style.background = `var(--${level})`;
+  const rows = factors.map((f) => {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = FACTOR_LABELS[f.key] + (f.count > 1 ? ` ×${f.count}` : '');
+    const pts = document.createElement('b');
+    pts.textContent = `+${f.points}`;
+    li.append(name, pts);
+    return li;
+  });
+  if (!rows.length) rows.push(Object.assign(document.createElement('li'), { className: 'muted', textContent: 'Признаков усталости нет' }));
+  els.factors.replaceChildren(...rows);
+}
+
+function updateFatigue(now) {
+  const result = trip.index.compute(now);
+  renderFatigue(result);
+  const { level } = result;
+  const worse = level === 'danger' ? trip.fatigueLevel !== 'danger' : level === 'warn' && trip.fatigueLevel === 'ok';
+  // Голосом — при ухудшении и потом не чаще раза в 3 минуты, чтобы не надоедать.
+  if (level !== 'ok' && (worse || now - trip.lastFatigueSay > 3 * 60 * 1000)) {
+    trip.lastFatigueSay = now;
+    if (level === 'danger') {
+      alarm.siren(settings);
+      alarm.say('Высокий риск уснуть. Остановитесь и отдохните.', settings);
+      logEvent('danger', `Индекс усталости ${result.score}`);
+    } else {
+      alarm.chime(settings);
+      alarm.say('Признаки усталости. Сделайте перерыв на ближайшей стоянке.', settings);
+      logEvent('warn', `Индекс усталости ${result.score}`);
+    }
+  }
+  trip.fatigueLevel = level;
+}
+
+const DEMO = {
+  weave: () => fatigueEvent('weave', 'Демо: виляние машины'),
+  nod: () => fatigueEvent('nod', 'Демо: кивок головы'),
+  yawn: () => fatigueEvent('yawn', 'Демо: зевание'),
+  time: () => {
+    trip.index.timeOffset += 2 * 60 * 60 * 1000;
+    logEvent('info', 'Демо: +2 часа в пути');
+    updateFatigue(performance.now());
+  },
+};
+els.demoRow.querySelectorAll('[data-demo]').forEach((b) =>
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    DEMO[b.dataset.demo]();
+  }),
+);
 
 /* ---------- Отметка скота на карте ---------- */
 

@@ -36,6 +36,11 @@ function pitchDegrees(m) {
   return (Math.atan2(m[6], m[10]) * 180) / Math.PI;
 }
 
+// Поворот головы влево-вправо (в градусах).
+function yawDegrees(m) {
+  return (Math.asin(Math.max(-1, Math.min(1, -m[2]))) * 180) / Math.PI;
+}
+
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
 /* ---------- Замер яркости глаз относительно кожи ---------- */
@@ -227,6 +232,7 @@ export class FatigueMonitor {
       glasses,
       brightness: this.brightness,
       pitchDelta,
+      yaw: lm && matrix ? yawDegrees(matrix) : null,
       yawned,
       tooManyYawns: yawned && recentYawns >= YAWNS_FOR_WARNING,
       landmarks: lm ?? null,

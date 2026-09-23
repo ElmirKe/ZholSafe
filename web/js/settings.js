@@ -9,6 +9,7 @@ const DEFAULTS = {
   autoReport: true,
   cameraMode: 'auto',
   glassesMode: 'auto',
+  showDemo: false,
 };
 
 function read() {

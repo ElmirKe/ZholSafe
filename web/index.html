@@ -55,7 +55,7 @@
             <span class="feat-icon danger">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><path d="M4 4l16 16"/></svg>
             </span>
-            <div><b>Микросон</b><small>Сирена, если глаза закрыты дольше <span data-out="closedSec">1,5 сек</span>. В тёмных очках — по наклону головы</small></div>
+            <div><b>Усталость и микросон</b><small>Индекс 0–100: виляние машины, кивки, зевание, взгляд в зеркала, время в пути. Работает и в тёмных очках</small></div>
           </li>
           <li>
             <span class="feat-icon warn">
@@ -99,6 +99,7 @@
           </div>
 
           <div class="hud-top">
+            <div class="pill" id="pill-fatigue" data-level="ok"><span class="dot"></span><span class="txt">Усталость 0</span></div>
             <div class="pill" id="pill-eyes" data-level="idle"><span class="dot"></span><span class="txt">Глаза: —</span></div>
             <div class="pill" id="pill-road" data-level="idle"><span class="dot"></span><span class="txt">Дорога: —</span></div>
             <div class="pill" id="pill-zone" data-level="warn" hidden><span class="dot"></span><span class="txt"></span></div>
@@ -109,10 +110,18 @@
             <span id="road-banner-text"></span>
           </div>
 
+          <div class="demo-row" id="demo-row" hidden>
+            <span>Демо:</span>
+            <button data-demo="weave">Виляние</button>
+            <button data-demo="nod">Кивок</button>
+            <button data-demo="yawn">Зевок</button>
+            <button data-demo="time">+2 часа</button>
+          </div>
+
           <div class="hud-bottom">
             <div class="stats">
               <div><b id="st-time">00:00</b><small>в пути</small></div>
-              <div><b id="st-sleep">0</b><small>микросон</small></div>
+              <div><b id="st-fatigue">0</b><small>усталость</small></div>
               <div><b id="st-road">0</b><small>опасности</small></div>
             </div>
             <label class="btn btn-icon" title="Видео трассы для демо">
@@ -133,6 +142,13 @@
 
         <!-- Боковая панель: только на широком экране -->
         <aside class="side">
+          <div class="panel">
+            <div class="panel-head"><span>Индекс усталости</span><span class="tag" id="side-fatigue-tag">НОРМА</span></div>
+            <div class="index-row"><b class="index-value" id="side-fatigue">0</b><span class="muted">/ 100</span></div>
+            <div class="meter"><div class="meter-fill" id="fatigue-fill"></div></div>
+            <ul class="factors" id="factors"><li class="muted">Признаков усталости нет</li></ul>
+            <div class="kv"><span>Датчики движения</span><b id="side-motion">—</b></div>
+          </div>
           <div class="panel">
             <div class="panel-head"><span>Состояние водителя</span><span class="tag" id="side-eyes-tag">—</span></div>
             <div class="big-status" id="side-eyes">—</div>
@@ -211,6 +227,7 @@
           <label class="row"><span>Голосовые подсказки</span><input type="checkbox" class="switch" data-setting="voice"></label>
           <label class="row"><span>Вибрация</span><input type="checkbox" class="switch" data-setting="vibrate"></label>
           <label class="row"><span>Отмечать скот на карте автоматически</span><input type="checkbox" class="switch" data-setting="autoReport"></label>
+          <label class="row"><span>Демо-кнопки для презентации</span><input type="checkbox" class="switch" data-setting="showDemo"></label>
         </div>
 
         <div class="group">
