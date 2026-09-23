@@ -61,8 +61,14 @@ public record CombinedRiskSnapshot(
                 throw new IllegalArgumentException(
                         "unavailable fusion cannot publish a level and must explain the degradation");
             }
-            return;
+        } else {
+            // Records forbid `return` in a compact constructor, so the fused checks live apart.
+            validateFused(status, roadLevel, driverLevel, combinedLevel, reasons);
         }
+    }
+
+    private static void validateFused(Status status, Optional<RiskLevel> roadLevel, Optional<RiskLevel> driverLevel,
+                                      Optional<RiskLevel> combinedLevel, List<CombinedRiskReason> reasons) {
         if (combinedLevel.isEmpty()) {
             throw new IllegalArgumentException("fused snapshot requires a combined level");
         }
