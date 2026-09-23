@@ -1,0 +1,11 @@
+{
+  "name": "ZholSafe",
+  "short_name": "ZholSafe",
+  "description": "Антисон и детекция скота на загородных трассах",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070D18",
+  "theme_color": "#070D18",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

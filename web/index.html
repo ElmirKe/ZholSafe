@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070D18">
+  <meta name="description" content="ZholSafe — антисон и детекция скота на загородных трассах Казахстана">
+  <title>ZholSafe</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <img src="icon.svg" alt="" width="32" height="32">
+      <div><b>ZHOLSAFE <span>AI</span></b><small>Безопасность на трассе</small></div>
+    </div>
+    <nav class="tabs" aria-label="Разделы">
+      <button class="active" data-tab="drive">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20 9 4M19 20 15 4M12 6v2M12 11v2M12 16v2"/></svg>
+        <span>Поездка</span>
+      </button>
+      <button data-tab="map">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <span>Карта</span>
+      </button>
+      <button data-tab="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        <span>Настройки</span>
+      </button>
+    </nav>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <main>
+    <!-- ===== Поездка ===== -->
+    <section class="tab active" id="tab-drive">
+      <div class="idle" id="drive-idle">
+        <div class="hero">
+          <p class="eyebrow">Трасса Алматы — Астана · ночь</p>
+          <h1>Не уснуть и&nbsp;не&nbsp;сбить скот</h1>
+          <p class="lead">Закрепите телефон на лобовом стекле. Фронтальная камера следит за глазами водителя, задняя — за дорогой в свете фар.</p>
+        </div>
+
+        <ul class="features">
+          <li>
+            <span class="feat-icon danger">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><path d="M4 4l16 16"/></svg>
+            </span>
+            <div><b>Микросон</b><small>Сирена, если глаза закрыты дольше <span data-out="closedSec">1,5 сек</span></small></div>
+          </li>
+          <li>
+            <span class="feat-icon warn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+            </span>
+            <div><b>Скот на дороге</b><small>Лошади, коровы, овцы и люди в кадре — голосом и звуком</small></div>
+          </li>
+          <li>
+            <span class="feat-icon accent">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+            </span>
+            <div><b>Карта выпаса</b><small>Предупреждение за 3 км до участка, где часто выходит скот</small></div>
+          </li>
+        </ul>
+
+        <div class="start-block">
+          <button class="btn btn-primary btn-xl" id="btn-start">Поехали</button>
+          <p class="hint" id="start-status">Загружаем ИИ-модели…</p>
+        </div>
+      </div>
+
+      <div class="drive" id="drive-active" data-level="ok" hidden>
+        <div class="stage-wrap">
+          <div class="stage" id="stage" data-main="road">
+            <div class="view view-road" data-view="road">
+              <video id="road-video" playsinline muted autoplay></video>
+              <canvas id="road-canvas"></canvas>
+              <div class="placeholder" id="road-empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20 9 4M19 20 15 4M12 6v2M12 11v2M12 16v2"/></svg>
+                <p>Камера дороги недоступна</p>
+                <label class="btn btn-ghost">Загрузить видео трассы<input type="file" accept="video/*" class="road-file" hidden></label>
+              </div>
+              <span class="view-tag">ДОРОГА · LIVE</span>
+            </div>
+            <div class="view view-driver" data-view="driver">
+              <video id="driver-video" playsinline muted autoplay></video>
+              <canvas id="driver-canvas"></canvas>
+              <div class="placeholder" id="driver-empty"><p>Нет камеры водителя</p></div>
+              <span class="view-tag">ВОДИТЕЛЬ</span>
+            </div>
+          </div>
+
+          <div class="hud-top">
+            <div class="pill" id="pill-eyes" data-level="idle"><span class="dot"></span><span class="txt">Глаза: —</span></div>
+            <div class="pill" id="pill-road" data-level="idle"><span class="dot"></span><span class="txt">Дорога: —</span></div>
+            <div class="pill" id="pill-zone" data-level="warn" hidden><span class="dot"></span><span class="txt"></span></div>
+          </div>
+
+          <div class="banner" id="road-banner" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+            <span id="road-banner-text"></span>
+          </div>
+
+          <div class="hud-bottom">
+            <div class="stats">
+              <div><b id="st-time">00:00</b><small>в пути</small></div>
+              <div><b id="st-sleep">0</b><small>микросон</small></div>
+              <div><b id="st-road">0</b><small>опасности</small></div>
+            </div>
+            <label class="btn btn-icon" title="Видео трассы для демо">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>
+              <input type="file" accept="video/*" class="road-file" hidden>
+            </label>
+            <button class="btn btn-danger" id="btn-stop">Стоп</button>
+          </div>
+
+          <div class="alarm" id="alarm-sleep" hidden>
+            <div>
+              <div class="alarm-title">ПРОСНИТЕСЬ!</div>
+              <p>Глаза закрыты слишком долго.<br>Остановитесь и отдохните.</p>
+              <small>Нажмите, чтобы закрыть</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Боковая панель: только на широком экране -->
+        <aside class="side">
+          <div class="panel">
+            <div class="panel-head"><span>Состояние водителя</span><span class="tag" id="side-eyes-tag">—</span></div>
+            <div class="big-status" id="side-eyes">—</div>
+            <div class="meter"><div class="meter-fill" id="ear-fill"></div><div class="meter-mark" id="ear-mark"></div></div>
+            <div class="kv"><span>EAR (открытость глаз)</span><b id="side-ear">—</b></div>
+            <div class="kv"><span>Порог после калибровки</span><b id="side-thr">—</b></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><span>Опасность впереди</span><span class="tag" id="side-road-tag">—</span></div>
+            <div class="big-status" id="side-road">—</div>
+            <div class="kv"><span>Дистанция (оценка)</span><b id="side-dist">—</b></div>
+            <div class="kv"><span>Уверенность модели</span><b id="side-score">—</b></div>
+          </div>
+          <div class="panel grow">
+            <div class="panel-head"><span>Лента событий</span></div>
+            <ol class="feed" id="feed"><li class="empty">Событий пока нет</li></ol>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== Карта ===== -->
+    <section class="tab" id="tab-map">
+      <div id="map"></div>
+      <div class="map-title">
+        <b>Опасные участки</b>
+        <small>Где на трассах чаще всего выходит скот</small>
+      </div>
+      <div class="map-card">
+        <div class="legend">
+          <span><i style="--c:var(--danger)"></i>Часто</span>
+          <span><i style="--c:var(--warn)"></i>Иногда</span>
+          <span><i style="--c:var(--accent)"></i>Ваши отметки</span>
+        </div>
+        <button class="btn btn-primary" id="btn-report">+ Здесь скот</button>
+      </div>
+      <div class="sheet" id="report-sheet" hidden>
+        <div class="sheet-panel" role="dialog" aria-labelledby="sheet-title">
+          <h3 id="sheet-title">Кого вы видели?</h3>
+          <div class="choice-grid">
+            <button data-type="horse">Лошади</button>
+            <button data-type="cow">Коровы</button>
+            <button data-type="camel">Верблюды</button>
+            <button data-type="sheep">Овцы</button>
+          </div>
+          <button class="btn btn-ghost" id="report-cancel">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Настройки ===== -->
+    <section class="tab" id="tab-settings">
+      <div class="settings">
+        <h2>Настройки</h2>
+
+        <div class="group">
+          <label class="row col">
+            <span class="row-head"><span>Тревога при закрытых глазах</span><b data-out="closedSec"></b></span>
+            <input type="range" min="1" max="3" step="0.5" data-setting="closedSec">
+          </label>
+          <label class="row col">
+            <span class="row-head"><span>Дистанция предупреждения</span><b data-out="warnDistance"></b></span>
+            <input type="range" min="50" max="300" step="25" data-setting="warnDistance">
+          </label>
+          <label class="row col">
+            <span class="row-head"><span>Минимальная уверенность детекции</span><b data-out="minScore"></b></span>
+            <input type="range" min="0.3" max="0.7" step="0.05" data-setting="minScore">
+          </label>
+        </div>
+
+        <div class="group">
+          <label class="row"><span>Звук</span><input type="checkbox" class="switch" data-setting="sound"></label>
+          <label class="row"><span>Голосовые подсказки</span><input type="checkbox" class="switch" data-setting="voice"></label>
+          <label class="row"><span>Вибрация</span><input type="checkbox" class="switch" data-setting="vibrate"></label>
+          <label class="row"><span>Отмечать скот на карте автоматически</span><input type="checkbox" class="switch" data-setting="autoReport"></label>
+        </div>
+
+        <div class="group">
+          <label class="row col">
+            <span class="row-head"><span>Камеры</span></span>
+            <select data-setting="cameraMode">
+              <option value="auto">Обе камеры (авто)</option>
+              <option value="driver">Только водитель</option>
+              <option value="road">Только дорога</option>
+            </select>
+            <small class="muted">Многие телефоны не дают включить обе камеры одновременно — тогда выберите одну.</small>
+          </label>
+        </div>
+
+        <p class="muted small">Прототип для хакатона. Модели работают прямо в браузере, видео никуда не отправляется. Отметки на карте пока хранятся только на этом устройстве.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>
