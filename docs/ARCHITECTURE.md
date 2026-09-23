@@ -219,6 +219,15 @@ no NMS in app). The decoder is chosen by `ModelSpec.decoder`, never by model nam
 pairing fails at load with `MODEL_INCOMPATIBLE: …received output shape […]`. NMS is never applied
 twice.
 
+**Tensor element types (Stage 2.1).** `TensorSession.TensorInfo.elementType` is the canonical
+`TensorElementType` enum; `OrtTensorSession.canonicalType(OnnxJavaType)` maps the runtime enum
+explicitly (never `toString()`). The detector requires `FLOAT32` for input and output and fails
+at load with the offending type otherwise. Decoders are the trust boundary for model output:
+every value entering a `RawDetection` is finite (NaN/±Inf in scores, coordinates, sizes or
+confidence rejects the candidate; a NaN score can never win the argmax), and end2end class
+indices must be finite, integer-valued and in `[0, numClasses)` — fractional values are rejected,
+never truncated. `RawDetection`'s constructor enforces finiteness as a last line of defence.
+
 **Model loading and failure policy.** `load()` = spec → labels (count must equal `numClasses`,
 ≥1 canonical class) → sha256 (if present) → session → I/O validation → READY. Any failure ⇒
 `DetectorState.ERROR` with a diagnostic; the pipeline still runs (DEGRADED) and every frame is a

@@ -10,8 +10,14 @@ import java.util.List;
  */
 public interface TensorSession extends AutoCloseable {
 
-    /** Static tensor metadata; dims may be -1 when dynamic. */
-    record TensorInfo(String name, long[] shape, String elementType) { }
+    /** Static tensor metadata; dims may be -1 when dynamic. {@code elementType} is canonical. */
+    record TensorInfo(String name, long[] shape, TensorElementType elementType) {
+        public TensorInfo {
+            java.util.Objects.requireNonNull(name, "name");
+            java.util.Objects.requireNonNull(elementType, "elementType");
+            shape = shape == null ? new long[0] : shape.clone();
+        }
+    }
 
     List<TensorInfo> inputs();
 

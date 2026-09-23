@@ -5,6 +5,7 @@ import kz.zholsafe.ai.decode.IncompatibleOutputException;
 import kz.zholsafe.ai.decode.Nms;
 import kz.zholsafe.ai.decode.RawDetection;
 import kz.zholsafe.ai.infer.ModelFiles;
+import kz.zholsafe.ai.infer.TensorElementType;
 import kz.zholsafe.ai.infer.TensorSession;
 import kz.zholsafe.ai.infer.TensorSessionFactory;
 import kz.zholsafe.ai.preprocess.LetterboxTransform;
@@ -179,8 +180,10 @@ public final class OnnxRoadDetector implements RoadDetector {
             if (ins.size() != 1) throw new IncompatibleOutputException("model has " + ins.size() + " inputs; spec must name one: " + names(ins));
             in = ins.get(0);
         }
-        if (!"float32".equalsIgnoreCase(in.elementType()) && !"FLOAT".equalsIgnoreCase(in.elementType())) {
-            throw new IncompatibleOutputException("input type " + in.elementType() + " unsupported (expected float32)");
+        if (in.elementType() != TensorElementType.FLOAT32) {
+            throw new IncompatibleOutputException("input '" + in.name() + "' element type " + in.elementType()
+                    + " unsupported; Stage 2 requires " + TensorElementType.FLOAT32
+                    + " (re-export the model in FP32 or add a typed input path)");
         }
         long[] want = s.inputShape().stream().mapToLong(Long::longValue).toArray();
         long[] got = in.shape();
@@ -199,6 +202,10 @@ public final class OnnxRoadDetector implements RoadDetector {
                     .orElseThrow(() -> new IncompatibleOutputException("output '" + s.outputName() + "' not found; outputs=" + names(outs)));
         } else {
             out = outs.get(0);
+        }
+        if (out.elementType() != TensorElementType.FLOAT32) {
+            throw new IncompatibleOutputException("output '" + out.name() + "' element type " + out.elementType()
+                    + " unsupported; decoders read " + TensorElementType.FLOAT32 + " only");
         }
         DetectionDecoder.forType(s.decoder()).validateShape(out.shape(), s);
     }

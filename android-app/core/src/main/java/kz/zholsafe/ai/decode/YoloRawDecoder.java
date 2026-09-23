@@ -11,6 +11,10 @@ import java.util.List;
  *
  * <p><b>Confidence rule:</b> confidence = max over class scores; class = argmax. Candidates below
  * {@code spec.confidenceThreshold()} are dropped here. NMS is REQUIRED afterwards.
+ *
+ * <p><b>Trust boundary:</b> every value that reaches a {@link RawDetection} must be finite.
+ * NaN/±Infinity in any class score, centre, width or height rejects that candidate (a NaN score
+ * never wins the argmax; a non-finite geometry is discarded). Downstream clamping is not relied on.
  */
 public final class YoloRawDecoder implements DetectionDecoder {
 
@@ -57,20 +61,20 @@ public final class YoloRawDecoder implements DetectionDecoder {
             int bestIdx = -1;
             for (int c = 0; c < nc; c++) {
                 float s = data[(4 + c) * n + i];
-                if (s > best) {
+                if (Decoders.isFinite(s) && s > best) { // NaN/±Inf scores can never be selected
                     best = s;
                     bestIdx = c;
                 }
             }
-            if (Float.isNaN(best) || best < thr || best > 1f) {
-                continue; // NaN/out-of-range scores are dropped, never clamped into a detection
+            if (bestIdx < 0 || best < thr || best > 1f) {
+                continue; // no finite score, below threshold, or out of [0,1] → not a detection
             }
             float cx = data[i];
             float cy = data[n + i];
             float w = data[2 * n + i];
             float h = data[3 * n + i];
-            if (!(w > 0f) || !(h > 0f)) {
-                continue; // also rejects NaN
+            if (!Decoders.allFinite(cx, cy, w, h) || w <= 0f || h <= 0f) {
+                continue; // malformed geometry is rejected here, not left for clamping
             }
             out.add(new RawDetection(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f, best, bestIdx));
         }

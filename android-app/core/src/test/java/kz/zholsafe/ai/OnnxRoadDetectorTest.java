@@ -1,6 +1,7 @@
 package kz.zholsafe.ai;
 
 import kz.zholsafe.ai.infer.ModelFiles;
+import kz.zholsafe.ai.infer.TensorElementType;
 import kz.zholsafe.ai.infer.TensorSession;
 import kz.zholsafe.ai.infer.TensorSessionFactory;
 import kz.zholsafe.model.Detection;
@@ -51,13 +52,15 @@ class OnnxRoadDetectorTest {
         final long[] inShape;
         final long[] outShape;
         final Function<float[], Result> fn;
+        TensorElementType inType = TensorElementType.FLOAT32;
+        TensorElementType outType = TensorElementType.FLOAT32;
         boolean closed;
         float[] lastInput;
         FakeSession(long[] inShape, long[] outShape, Function<float[], Result> fn) {
             this.inShape = inShape; this.outShape = outShape; this.fn = fn;
         }
-        @Override public List<TensorInfo> inputs() { return List.of(new TensorInfo("images", inShape, "float32")); }
-        @Override public List<TensorInfo> outputs() { return List.of(new TensorInfo("output0", outShape, "float32")); }
+        @Override public List<TensorInfo> inputs() { return List.of(new TensorInfo("images", inShape, inType)); }
+        @Override public List<TensorInfo> outputs() { return List.of(new TensorInfo("output0", outShape, outType)); }
         @Override public String executionProvider() { return "FAKE"; }
         @Override public Result run(String in, float[] input, long[] shape, String out) { lastInput = input.clone(); return fn.apply(input); }
         @Override public void close() { closed = true; }
@@ -173,6 +176,24 @@ class OnnxRoadDetectorTest {
         // end2end tensor where RAW expected
         FakeSession e2e = new FakeSession(new long[] { 1, 3, 8, 8 }, new long[] { 1, 300, 6 }, in -> null);
         assertThrows(ModelNotAvailableException.class, () -> new OnnxRoadDetector("m", f, factory(e2e)).load());
+    }
+
+    @Test
+    void nonFloat32TensorsAreRejectedAtLoadWithCanonicalTypeDiagnostic() {
+        MemFiles f = files(SPEC_RAW, "person\ncar\ncow\n");
+        FakeSession fp16In = new FakeSession(new long[] { 1, 3, 8, 8 }, new long[] { 1, 7, 100 }, in -> null);
+        fp16In.inType = TensorElementType.FLOAT16;
+        String m1 = assertThrows(ModelNotAvailableException.class,
+                () -> new OnnxRoadDetector("m", f, factory(fp16In)).load()).getMessage();
+        assertTrue(m1.contains("FLOAT16") && m1.contains("FLOAT32"), m1);
+        FakeSession int8Out = new FakeSession(new long[] { 1, 3, 8, 8 }, new long[] { 1, 7, 100 }, in -> null);
+        int8Out.outType = TensorElementType.INT8;
+        String m2 = assertThrows(ModelNotAvailableException.class,
+                () -> new OnnxRoadDetector("m", f, factory(int8Out)).load()).getMessage();
+        assertTrue(m2.contains("INT8"), m2);
+        FakeSession unknown = new FakeSession(new long[] { 1, 3, 8, 8 }, new long[] { 1, 7, 100 }, in -> null);
+        unknown.outType = TensorElementType.UNKNOWN;
+        assertThrows(ModelNotAvailableException.class, () -> new OnnxRoadDetector("m", f, factory(unknown)).load());
     }
 
     @Test

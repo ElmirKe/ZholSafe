@@ -11,6 +11,10 @@ import java.util.List;
  * low-confidence entries, so the confidence threshold still applies. NO NMS afterwards.
  *
  * <p><b>Confidence rule:</b> column 4 is the model's final score; used as-is.
+ *
+ * <p><b>Trust boundary:</b> a row is accepted only if x1,y1,x2,y2 and conf are finite, conf is in
+ * [0,1] and ≥ threshold, and the class column is a finite <em>integer-valued</em> float in
+ * {@code [0, numClasses)} — fractional values (e.g. 3.7) are rejected, never truncated.
  */
 public final class YoloEnd2EndDecoder implements DetectionDecoder {
 
@@ -54,14 +58,21 @@ public final class YoloEnd2EndDecoder implements DetectionDecoder {
         for (int i = 0; i < k; i++) {
             int o = i * 6;
             float conf = data[o + 4];
-            if (Float.isNaN(conf) || conf < thr || conf > 1f) {
+            if (!Decoders.isFinite(conf) || conf < thr || conf > 1f) {
                 continue;
             }
-            float cls = data[o + 5];
-            if (Float.isNaN(cls) || cls < 0 || cls >= spec.numClasses()) {
+            int cls = Decoders.strictClassIndex(data[o + 5], spec.numClasses());
+            if (cls < 0) {
                 continue;
             }
-            out.add(new RawDetection(data[o], data[o + 1], data[o + 2], data[o + 3], conf, (int) cls));
+            float x1 = data[o];
+            float y1 = data[o + 1];
+            float x2 = data[o + 2];
+            float y2 = data[o + 3];
+            if (!Decoders.allFinite(x1, y1, x2, y2)) {
+                continue;
+            }
+            out.add(new RawDetection(x1, y1, x2, y2, conf, cls));
         }
     }
 }

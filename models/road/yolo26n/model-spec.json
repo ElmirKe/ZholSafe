@@ -31,6 +31,6 @@
     "expectedOutputShape": [1, 300, 6],
     "canonicalClassesSupported": ["PERSON", "DOG", "HORSE", "COW", "SHEEP"],
     "canonicalClassesNotSupported": ["GOAT", "CAMEL"],
-    "status": "SPEC ONLY — model.onnx NOT PRESENT; decoder assumption (end2end head, reg_max=1) taken from ultralytics 8.4 cfg/models/26/yolo26.yaml and must be confirmed by write_model_spec.py against the real export"
+    "status": "PROVISIONAL — SPEC ONLY — model.onnx NOT PRESENT; decoder assumption (end2end head, reg_max=1) taken from ultralytics 8.4 cfg/models/26/yolo26.yaml and must be confirmed by write_model_spec.py against the real export"
   }
 }

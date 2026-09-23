@@ -91,6 +91,100 @@ class DecoderTest {
     }
 
     @Test
+    void rawDecoderRejectsNonFiniteScoresAndGeometry() throws Exception {
+        ModelSpec s = TestSpecs.raw(640, NC, 0.25f, 0.5f);
+        float inf = Float.POSITIVE_INFINITY;
+        float ninf = Float.NEGATIVE_INFINITY;
+        List<RawDetection> out = new ArrayList<>();
+        new YoloRawDecoder().decode(rawTensor(new float[][] {
+                { 100, 100, 10, 10, inf, 0, 0, 0, 0 },          // +Inf score must not be selected
+                { 100, 100, 10, 10, 0.9f, ninf, 0, 0, 0 },      // -Inf in another class; 0.9 still valid → kept
+                { inf, 100, 10, 10, 0.9f, 0, 0, 0, 0 },         // cx +Inf
+                { 100, ninf, 10, 10, 0.9f, 0, 0, 0, 0 },        // cy -Inf
+                { 100, 100, inf, 10, 0.9f, 0, 0, 0, 0 },        // w +Inf
+                { 100, 100, 10, Float.NaN, 0.9f, 0, 0, 0, 0 },  // h NaN
+                { 100, 100, 10, 10, Float.NaN, 0.8f, 0, 0, 0 } }), // NaN in class 0, class 1 finite → kept as class 1
+                rawShape(7), s, out);
+        assertEquals(2, out.size());
+        assertEquals(0, out.get(0).classIndex());
+        assertEquals(0.9f, out.get(0).confidence());
+        assertEquals(1, out.get(1).classIndex());
+        assertEquals(0.8f, out.get(1).confidence());
+    }
+
+    @Test
+    void rawDecoderAllScoresNonFiniteYieldsNothing() throws Exception {
+        ModelSpec s = TestSpecs.raw(640, NC, 0.0f, 0.5f);
+        List<RawDetection> out = new ArrayList<>();
+        float inf = Float.POSITIVE_INFINITY;
+        new YoloRawDecoder().decode(rawTensor(new float[][] { { 100, 100, 10, 10, inf, inf, Float.NaN, -inf, inf } }), rawShape(1), s, out);
+        assertTrue(out.isEmpty(), "threshold 0 must not admit a NaN/Inf-only row");
+    }
+
+    @Test
+    void end2endStrictClassIndex() throws Exception {
+        ModelSpec s = TestSpecs.end2end(640, 80, 0.25f);
+        List<RawDetection> out = new ArrayList<>();
+        float inf = Float.POSITIVE_INFINITY;
+        new YoloEnd2EndDecoder().decode(e2e(new float[][] {
+                { 0, 0, 5, 5, 0.9f, 3.0f },    // valid 3
+                { 0, 0, 5, 5, 0.9f, 0.0f },    // valid 0
+                { 0, 0, 5, 5, 0.9f, 79.0f },   // valid 79 (COCO-80)
+                { 0, 0, 5, 5, 0.9f, 3.7f },    // fractional → reject (not truncated to 3)
+                { 0, 0, 5, 5, 0.9f, -1f },     // negative
+                { 0, 0, 5, 5, 0.9f, 80f },     // == numClasses
+                { 0, 0, 5, 5, 0.9f, Float.NaN },
+                { 0, 0, 5, 5, 0.9f, inf },
+                { 0, 0, 5, 5, 0.9f, -inf },
+                { 0, 0, 5, 5, 0.9f, -0.0f } }), // -0.0 == 0 → valid 0
+                new long[] { 1, 10, 6 }, s, out);
+        assertEquals(4, out.size());
+        assertEquals(3, out.get(0).classIndex());
+        assertEquals(0, out.get(1).classIndex());
+        assertEquals(79, out.get(2).classIndex());
+        assertEquals(0, out.get(3).classIndex());
+    }
+
+    @Test
+    void end2endRejectsNonFiniteCoordinatesAndConfidence() throws Exception {
+        ModelSpec s = TestSpecs.end2end(640, NC, 0.25f);
+        List<RawDetection> out = new ArrayList<>();
+        float inf = Float.POSITIVE_INFINITY;
+        new YoloEnd2EndDecoder().decode(e2e(new float[][] {
+                { inf, 0, 5, 5, 0.9f, 1 },
+                { 0, -inf, 5, 5, 0.9f, 1 },
+                { 0, 0, Float.NaN, 5, 0.9f, 1 },
+                { 0, 0, 5, inf, 0.9f, 1 },
+                { 0, 0, 5, 5, inf, 1 },
+                { 0, 0, 5, 5, -inf, 1 },
+                { 0, 0, 5, 5, 1.0001f, 1 },
+                { 0, 0, 5, 5, 0.9f, 1 } }), new long[] { 1, 8, 6 }, s, out);
+        assertEquals(1, out.size());
+        assertEquals(new RawDetection(0, 0, 5, 5, 0.9f, 1), out.get(0));
+    }
+
+    @Test
+    void strictClassIndexHelper() {
+        assertEquals(3, Decoders.strictClassIndex(3.0f, 80));
+        assertEquals(0, Decoders.strictClassIndex(0.0f, 80));
+        assertEquals(79, Decoders.strictClassIndex(79.0f, 80));
+        assertEquals(-1, Decoders.strictClassIndex(3.7f, 80));
+        assertEquals(-1, Decoders.strictClassIndex(-1f, 80));
+        assertEquals(-1, Decoders.strictClassIndex(80f, 80));
+        assertEquals(-1, Decoders.strictClassIndex(Float.NaN, 80));
+        assertEquals(-1, Decoders.strictClassIndex(Float.POSITIVE_INFINITY, 80));
+        assertEquals(-1, Decoders.strictClassIndex(Float.NEGATIVE_INFINITY, 80));
+        assertEquals(-1, Decoders.strictClassIndex(2.9999998f, 80));
+    }
+
+    @Test
+    void rawDetectionRecordRefusesNonFinite() {
+        assertThrows(IllegalArgumentException.class, () -> new RawDetection(Float.NaN, 0, 1, 1, 0.5f, 0));
+        assertThrows(IllegalArgumentException.class, () -> new RawDetection(0, 0, 1, 1, Float.POSITIVE_INFINITY, 0));
+        assertThrows(IllegalArgumentException.class, () -> new RawDetection(0, 0, 1, 1, 0.5f, -1));
+    }
+
+    @Test
     void rawDecoderOutOfRangeCoordinatesArePassedThroughForClampingLater() throws Exception {
         // decoder is model-space; clamping happens in LetterboxTransform.toSource (tested there)
         ModelSpec s = TestSpecs.raw(640, NC, 0.25f, 0.5f);

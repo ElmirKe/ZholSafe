@@ -65,6 +65,13 @@ treat the steps above as the manual test plan.
 4. Logcat tags: `OnnxDetector` (load diagnostics, provider, supported classes), `RoadDetection`,
    `Pipeline`.
 
+### ONNX Runtime adapter API check
+
+`scripts/check-ort-adapter.sh` compiles `kz.zholsafe.ai.Ort*` against the real ONNX Runtime Java
+sources for the version pinned in `app/build.gradle` (`git clone --branch v<ver> --sparse
+microsoft/onnxruntime`, `java/src/main/{java,jvm}`). It proves signature compatibility only; it
+does not load the native library or run a model.
+
 ### Benchmarking candidates
 
 `kz.zholsafe.benchmark.DetectorBenchmark` runs any `RoadDetector` over a frame list with warm-up

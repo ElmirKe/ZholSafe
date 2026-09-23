@@ -31,6 +31,6 @@
     "expectedOutputShape": [1, 84, 8400],
     "canonicalClassesSupported": ["PERSON", "DOG", "HORSE", "COW", "SHEEP"],
     "canonicalClassesNotSupported": ["GOAT", "CAMEL"],
-    "status": "SPEC ONLY — model.onnx NOT PRESENT; sha256 must be filled by the export script"
+    "status": "PROVISIONAL — SPEC ONLY — model.onnx NOT PRESENT; sha256 must be filled by the export script"
   }
 }
