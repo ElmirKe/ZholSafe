@@ -97,6 +97,38 @@ qualitative bbox-growth labels; the Stage 3 track-ID overlay is unchanged. No me
 risk warning is derived from this stage. Android SDK build/device run and official Gradle/JUnit
 must be reported separately as NOT EXECUTED when not run.
 
+## Stage 4.1 experimental distance/TTC verification
+
+`docs/STAGE4_1_DISTANCE_TTC.md` specifies the geometry, prior assumptions, physical rate
+regression, distinct metric/optical TTC and failure policy. `PhysicalEstimationTest` exercises
+analytic ray/plane, pitch, resolution, FOV flags, size bounds and conflict, irregular/large
+source-time least squares, track loss/recreation/continuity, stale/duplicate/reversed time,
+quality gates, no-calibration optical fallback, immutable contracts and capacity.
+`RoadDetectionProcessorTest` covers inline publishing and detector failure vs successful empty
+road. Official JVM command is `cd android-app && gradle :core:test` **only when Gradle/JUnit
+are installed**; do not report temporary Java shim runs as official JUnit/Gradle. Android SDK
+build (`:app:assembleDebug`) and hardware/road validation are independent gates; report
+`ANDROID BUILD: NOT EXECUTED` unless actually run. With no known calibration/prior, debug text
+must read depth/range-rate/metric TTC UNAVAILABLE; an `IMAGE_SCALE` optical TTC may appear after
+sustained growth but is not a metric estimate or warning. Stage 2.5's 31-image desktop inference
+need not be rerun because Stage 4.1 changes no inference or model preprocessing code.
+
+For future real-world validation before any Stage 4.2 use: measure upright intrinsics, principal
+point, mounted height/pitch and their uncertainty on the actual device; confirm per-source clock
+lineage and crop/rotation; collect independently measured road-ground target positions across
+range, lighting, grades, object morphologies and camera vibration; quantify range errors,
+outlier rates and failure coverage with held-out scenes; test relative closing rate/optical TTC
+against independent range-over-time truth, then replay negative/stale/conflict scenarios.
+No such calibration dataset/device measurements are claimed here.
+
+Stage 4.1 sandbox verification (temporary JDK 17 `javac` + JUnit-compatible reflection
+**shim**, **not** official Gradle/JUnit): all **203 core test methods passed, 0 failed**;
+`smoke-test`'s **5 synthetic image-frame methods passed** (no 31-image model inference rerun).
+Core and app `PipelineController` sources compiled with temporary JDK 17; **9 Python
+ai-training tests passed**; hazard-event schema fixture check passed. Official Gradle/JUnit:
+**NOT EXECUTED** (no Gradle wrapper/JUnit distribution available). Android build/device:
+**NOT EXECUTED**; no runtime inference or physical accuracy verified on a device.
+
 ## Rules for every stage (binding)
 
 1. Inspect the existing repository first; preserve working functionality; never create a
@@ -117,7 +149,8 @@ must be reported separately as NOT EXECUTED when not run.
 - Enums for classes/statuses/levels/reasons — no scattered string constants.
 - No magic numbers: every threshold/weight lives in `kz.zholsafe.config.*` or
   `application.yml`.
-- Anything approximate → `Estimate`. Anything unknown → explicit unavailable representation.
+- Approximate values need explicit method/quality; Stage 4.1 uses richer physical estimate
+  records instead of reinterpreting the legacy `Estimate`. Unknown → explicit reason and NaN.
 - Python is for `ai-training/` only; it must never be needed to run the app or server.
 - No C++/JNI, no Kotlin, no frontend framework, no microservices, without an approved proposal.
 

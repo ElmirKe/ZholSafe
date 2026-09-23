@@ -7,16 +7,15 @@ import kz.zholsafe.risk.VehicleContext;
 /**
  * Pluggable time-to-collision estimator.
  *
- * <p>Must return {@link Estimate#unavailable()} unless there is enough information (distance
- * estimate + closing speed, or a reliable scale-change series). Never fabricate a value.
- * Produce values with {@link Estimate#ttc(double, kz.zholsafe.model.EstimationMethod)}. A
- * mathematically negative TTC (not closing / closest approach already passed) is NOT a valid
- * estimate in ZholSafe — return {@link Estimate#unavailable()} for it.
+ * <p>Legacy Stage 0 scalar/Risk Engine port, deliberately UNAVAILABLE in Stage 4.1. The
+ * separate {@link kz.zholsafe.physical.PhysicalTtcPort} preserves distinct metric-range and
+ * uncalibrated image-expansion methods, source time and evidence quality. Do not silently feed
+ * those experimental diagnostics into TrackedObject/RiskInput. No negative/non-closing TTC.
  */
 public interface TtcEstimator {
 
     Estimate estimateTtcSeconds(TrackedObject object, VehicleContext vehicle);
 
-    /** Always-unavailable implementation, used until a real estimator exists and in tests. */
+    /** Always-unavailable legacy implementation (including Stage 4.1) and test default. */
     TtcEstimator UNAVAILABLE = (object, vehicle) -> Estimate.unavailable();
 }

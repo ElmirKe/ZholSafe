@@ -12,6 +12,8 @@ import kz.zholsafe.tracking.ByteTrackInspiredTracker;
 import kz.zholsafe.trajectory.LinearImageTrajectoryEstimator;
 import kz.zholsafe.trajectory.TrajectoryEstimator;
 import kz.zholsafe.logging.ZLog;
+import kz.zholsafe.physical.PhysicalEstimationProcessor;
+import kz.zholsafe.physical.PhysicalEstimationSnapshot;
 import kz.zholsafe.model.Detection;
 
 import java.util.List;
@@ -21,8 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
 /**
- * Stage 2–4.0 {@link FrameProcessor}: runs the detector, tracker and image-only trajectory fit
- * on the SAME processing thread; publishes separate detection/tracking/trajectory snapshots.
+ * Stage 2–4.1 {@link FrameProcessor}: runs the detector, tracker, image-only trajectory fit and physical diagnostics
+ * on the SAME processing thread; publishes separate detection/tracking/trajectory/physical snapshots.
  *
  * <ul>
  *   <li>{@link #load()} is called by the owner before the pipeline starts (may be slow). If it
@@ -43,6 +45,8 @@ public final class RoadDetectionProcessor implements FrameProcessor {
     private final RoadDetector detector;
     private final ByteTrackInspiredTracker tracker;
     private final TrajectoryEstimator trajectoryEstimator;
+    private final PhysicalEstimationProcessor physicalEstimator;
+    private final AtomicReference<PhysicalEstimationSnapshot> physicalLatest;
     private final AtomicReference<TrackingSnapshot> trackingLatest;
     private final AtomicReference<TrajectorySnapshot> trajectoryLatest;
     private final LongSupplier clock;
@@ -82,7 +86,14 @@ public final class RoadDetectionProcessor implements FrameProcessor {
     /** Injectable for JVM tests or future image-only estimator implementations. */
     public RoadDetectionProcessor(RoadDetector detector, LongSupplier clock, TrackingConfig tracking,
                                   TrajectoryEstimator estimator) {
+        this(detector, clock, tracking, estimator, PhysicalEstimationProcessor.unavailableByDefault());
+    }
+
+    /** Explicit configuration only: caller supplies calibration/priors; default has neither. */
+    public RoadDetectionProcessor(RoadDetector detector, LongSupplier clock, TrackingConfig tracking,
+                                  TrajectoryEstimator estimator, PhysicalEstimationProcessor physicalEstimator) {
         this.detector = Objects.requireNonNull(detector);
+        this.physicalEstimator = Objects.requireNonNull(physicalEstimator);
         this.clock = Objects.requireNonNull(clock);
         this.tracker = new ByteTrackInspiredTracker(tracking);
         this.trajectoryEstimator = Objects.requireNonNull(estimator);
@@ -90,6 +101,9 @@ public final class RoadDetectionProcessor implements FrameProcessor {
         this.trackingLatest = new AtomicReference<>(TrackingSnapshot.unavailable(0, TrackingSnapshot.Status.NOT_STARTED));
         this.trajectoryLatest = new AtomicReference<>(TrajectorySnapshot.unavailable(0,
                 TrajectorySnapshot.Status.NOT_STARTED, TrackingSnapshot.Status.NOT_STARTED));
+        this.physicalLatest = new AtomicReference<>(PhysicalEstimationSnapshot.unavailable(0,
+                PhysicalEstimationSnapshot.Status.NOT_STARTED, TrackingSnapshot.Status.NOT_STARTED,
+                TrajectorySnapshot.Status.NOT_STARTED));
     }
 
     /** Loads the model. Returns false (and records the diagnostic) instead of throwing. */
@@ -143,6 +157,10 @@ public final class RoadDetectionProcessor implements FrameProcessor {
             trajectoryLatest.set(TrajectorySnapshot.unavailable(frame.timestampNanos(),
                     TrajectorySnapshot.Status.TRACKING_UNAVAILABLE, TrackingSnapshot.Status.TRACKER_ERROR));
             trackingLatest.set(TrackingSnapshot.unavailable(frame.timestampNanos(), TrackingSnapshot.Status.TRACKER_ERROR));
+            physicalEstimator.reset();
+            physicalLatest.set(PhysicalEstimationSnapshot.unavailable(frame.timestampNanos(),
+                    PhysicalEstimationSnapshot.Status.TRACKING_UNAVAILABLE, TrackingSnapshot.Status.TRACKER_ERROR,
+                    TrajectorySnapshot.Status.TRACKING_UNAVAILABLE));
             throw e;
         }
         try {
@@ -155,7 +173,28 @@ public final class RoadDetectionProcessor implements FrameProcessor {
         } catch (RuntimeException e) {
             trajectoryLatest.set(TrajectorySnapshot.unavailable(frame.timestampNanos(),
                     TrajectorySnapshot.Status.ESTIMATOR_ERROR, TrackingSnapshot.Status.READY));
+            physicalEstimator.reset();
+            physicalLatest.set(PhysicalEstimationSnapshot.unavailable(frame.timestampNanos(),
+                    PhysicalEstimationSnapshot.Status.TRAJECTORY_UNAVAILABLE, TrackingSnapshot.Status.READY,
+                    TrajectorySnapshot.Status.ESTIMATOR_ERROR));
             throw e;
+        }
+        PhysicalEstimationSnapshot physical;
+        try {
+            physical = Objects.requireNonNull(physicalEstimator.analyze(tracked, trajectoryLatest.get()),
+                    "physical result");
+        } catch (RuntimeException e) {
+            physicalEstimator.reset();
+            physicalLatest.set(PhysicalEstimationSnapshot.unavailable(frame.timestampNanos(),
+                    PhysicalEstimationSnapshot.Status.ESTIMATOR_ERROR, TrackingSnapshot.Status.READY,
+                    TrajectorySnapshot.Status.READY));
+            throw e;
+        }
+        physicalLatest.set(physical);
+        if (!physical.available() || physical.frameTimestampNanos() != frame.timestampNanos()
+                || physical.uprightWidth() != frame.uprightWidth()
+                || physical.uprightHeight() != frame.uprightHeight()) {
+            throw new IllegalStateException("physical estimator rejected successful source frame: " + physical.status());
         }
     }
 
@@ -168,12 +207,21 @@ public final class RoadDetectionProcessor implements FrameProcessor {
         trajectoryLatest.set(TrajectorySnapshot.unavailable(frameTimestampNanos,
                 TrajectorySnapshot.Status.TRACKING_UNAVAILABLE, TrackingSnapshot.Status.DETECTOR_UNAVAILABLE));
         trackingLatest.set(TrackingSnapshot.unavailable(frameTimestampNanos, TrackingSnapshot.Status.DETECTOR_UNAVAILABLE));
+        physicalEstimator.reset();
+        physicalLatest.set(PhysicalEstimationSnapshot.unavailable(frameTimestampNanos,
+                PhysicalEstimationSnapshot.Status.TRACKING_UNAVAILABLE, TrackingSnapshot.Status.DETECTOR_UNAVAILABLE,
+                TrajectorySnapshot.Status.TRACKING_UNAVAILABLE));
         latest.set(DetectionSnapshot.unavailable(detector.info().modelId(), detector.state(), sequence.incrementAndGet()));
     }
 
     /** Thread-safe latest image-only trajectory result (never null). */
     public TrajectorySnapshot latestTrajectory() {
         return trajectoryLatest.get();
+    }
+
+    /** Thread-safe latest physical diagnostics; no value is fed to Risk Engine. */
+    public PhysicalEstimationSnapshot latestPhysical() {
+        return physicalLatest.get();
     }
 
     /** Thread-safe latest tracking result; independent of the detection snapshot. */

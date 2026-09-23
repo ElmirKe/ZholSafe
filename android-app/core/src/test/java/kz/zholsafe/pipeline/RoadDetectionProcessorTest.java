@@ -5,6 +5,8 @@ import kz.zholsafe.ai.DetectorState;
 import kz.zholsafe.ai.FakeRoadDetector;
 import kz.zholsafe.ai.Frame;
 import kz.zholsafe.model.ObjectClass;
+import kz.zholsafe.physical.PhysicalEstimationSnapshot;
+import kz.zholsafe.physical.PhysicalReason;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
@@ -40,6 +42,7 @@ class RoadDetectionProcessorTest {
         assertEquals(1, s.sequence());
         assertEquals(1, p.inferenceCount());
         assertEquals(5.0, p.recentTotalMillis(), 1e-9);
+        assertEquals(PhysicalEstimationSnapshot.Status.READY, p.latestPhysical().status());
         assertTrue(p.statusLine().contains("READY"));
     }
 
@@ -50,6 +53,8 @@ class RoadDetectionProcessorTest {
         p.process(frame(1));
         assertTrue(p.latest().available());
         assertTrue(p.latest().detections().isEmpty());
+        assertTrue(p.latestPhysical().available());
+        assertTrue(p.latestPhysical().objects().isEmpty(), "empty successful road != unavailable");
     }
 
     @Test
@@ -63,6 +68,8 @@ class RoadDetectionProcessorTest {
         assertEquals(DetectorState.ERROR, p.latest().detectorState());
         assertTrue(p.statusLine().contains("UNAVAILABLE"));
         assertEquals(0, p.inferenceCount());
+        assertEquals(PhysicalEstimationSnapshot.Status.TRACKING_UNAVAILABLE, p.latestPhysical().status());
+        assertTrue(p.latestPhysical().objects().isEmpty());
     }
 
     @Test
@@ -76,9 +83,11 @@ class RoadDetectionProcessorTest {
         assertThrows(DetectionException.class, () -> p.process(frame(2)));
         assertFalse(p.latest().available(), "failure must not look like an empty (clear) road");
         assertEquals(1, p.failureCount());
+        assertEquals(PhysicalEstimationSnapshot.Status.TRACKING_UNAVAILABLE, p.latestPhysical().status());
         det.setThrowOnDetect(null);
         p.process(frame(3));
         assertTrue(p.latest().available());
+        assertTrue(p.latestPhysical().available());
     }
 
     @Test

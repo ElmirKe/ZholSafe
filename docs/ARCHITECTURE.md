@@ -74,7 +74,8 @@ Package root: `kz.zholsafe`
 | `model`        | core   | Shared value types: `ObjectClass`, `Detection`, `BoundingBox`, `Estimate`, `HazardEvent`, `GeoPosition` | 0 |
 | `ai`           | core   | Inference contracts: `Frame`, `OnnxModel`, `RoadDetector`, `DriverDetector`, `LabelMap`, `ModelDescriptor`, `ModelNotAvailableException` | 0 (impl: 2 / deferred 4.3) |
 | `tracking`     | core   | `ObjectTracker`, `TrackedObject`, `MovementClass`                              | 0 (impl: 3) |
-| `trajectory`   | core   | `TrajectoryEstimator`, `DistanceEstimator`, `TtcEstimator` (pluggable, honest) | 0 (impl: 4.0/4.1) |
+| `trajectory`   | core   | Stage 4.0 `TrajectoryEstimator`; legacy `DistanceEstimator`/`TtcEstimator` remain unavailable | 0 / 4.0 |
+| `physical`     | core   | Experimental calibration, ground/size depth, metric range regression, separate TTC contracts/processor | 4.1 |
 | `driver`       | core   | `DriverObservation`, `DriverState`, `HeadPose`, `DrowsinessAnalyzer`           | 0 (impl: deferred 4.3) |
 | `risk`         | core   | `RiskEngine`, `RiskInput`, `RiskAssessment`, `RiskLevel`, `RiskReason`, `VehicleContext`, `BaselineRiskEngine` | 0 (final algo: 4.2) |
 | `config`       | core   | `ZholSafeConfig` root + `DetectorConfig`, `TrackingConfig`, `RiskConfig`, `DriverGuardConfig`, `NetworkConfig` | 0 |
@@ -97,8 +98,8 @@ CameraX ImageProxy ──(camera analysis executor)──► CameraFrameAdapter 
         Stage 2: detector processor → preprocess → OnnxModel.run → postprocess/NMS → List<Detection>
    ──► ObjectTracker.update → TrackingSnapshot (Stage 3)
    ──► TrajectoryEstimator.estimate → TrajectorySnapshot (Stage 4.0 IMAGE ONLY)
-   ──► Distance/TtcEstimator (future 4.1) → RiskEngine (future 4.2)
-   ──► AlertSink (UI thread for rendering/audio) ; HazardEventPublisher (network thread)
+   ──► PhysicalEstimationProcessor → PhysicalEstimationSnapshot (Stage 4.1 diagnostics)
+   ──► [RiskEngine fusion / AlertSink / HazardEventPublisher: future, NOT connected in 4.1]
 ```
 
 **Detection ≠ Risk.** A detection states presence; risk is a function of class weight,
@@ -145,9 +146,9 @@ is busy (counted as `droppedOrReplacedFrames`). Nothing anywhere can grow with l
 **Timestamps (two clock domains, never mixed).** `Frame.timestampNanos` is the *source/image*
 timestamp — for `RoadCamera` it is CameraX `ImageInfo.getTimestamp()` (camera capture time,
 device clock domain per Camera2 `SENSOR_INFO_TIMESTAMP_SOURCE`); for `SyntheticFrameSource` it is
-the source's injected clock. It is not wall-clock and not arrival time. Tracking (Stage 3)
-and image trajectory (Stage 4.0) must use differences between consecutive frames of the same
-`CameraSource` only.
+the source's injected clock. It is not wall-clock and not arrival time. Tracking (Stage 3),
+image trajectory (Stage 4.0) and physical range-rate (Stage 4.1) must use source-time
+differences between observations of the same track from the same `CameraSource` only.
 Processing duration and FPS in `PipelineTelemetry` use the pipeline's local `System.nanoTime()`
 clock; the pipeline never subtracts a frame timestamp from its local clock.
 
@@ -257,8 +258,9 @@ tracking and freezes state (not a miss); successful empty detection advances the
 distance and TTC remain unavailable, movement UNKNOWN and corridor false. The overlay draws only
 currently observed tentative/confirmed tracks, labelled with their IDs; LOST boxes are stale and
 never drawn. See `docs/STAGE3_TRACKING.md` for defaults, failure/timestamp/cap policies and tests.
-Stage 4.0 adds image trajectory downstream; future Stage 4.1/4.2 cover justified physical
-estimates and risk respectively. No trajectory estimator ran in Stage 3 itself.
+Stage 4.0 adds image trajectory downstream; Stage 4.1 adds experimental physical diagnostics
+without changing these Stage 3 fields. Stage 4.2 risk fusion remains future work. No trajectory
+estimator ran in Stage 3 itself.
 
 ### 5.4 Stage 4.0 image-space trajectory (implemented in core; device NOT VERIFIED)
 
@@ -271,6 +273,17 @@ publishes trajectory unavailable, whereas successful zero detections is READY (p
 All numerical output uses image fractions/second or dimensionless log-area/second; no physical
 `Estimate`, `MovementClass` mutation, TTC or risk integration is performed. `docs/STAGE4_0_TRAJECTORY.md`
 defines math, thresholds, timestamp/quality policy and limitations.
+
+### 5.5 Stage 4.1 physical diagnostics (experimental core; device NOT VERIFIED)
+
+Ground-plane contact and optional explicitly injected object-height priors produce method-labelled
+camera optical-axis depth, not ground-path or slant distance. Metric relative range-rate uses only
+bounded per-track physical distances and Stage 3 source times. Sustained Stage 4.0 GROWING yields
+an independent LOW-quality uncalibrated optical TTC; a conflicting TTC invalidates the selected
+diagnostic, never averages. Missing calibration, inaccurate flat-road assumption, stale/lost track,
+upstream failure and absent evidence yield explicit unavailability. The processor holds only
+bounded numeric samples and runs inline, without a second queue/camera/thread; the Risk Engine
+and warnings are unchanged. See `docs/STAGE4_1_DISTANCE_TTC.md`.
 
 ## 6. DriverGuard (deferred Stage 4.3)
 
@@ -290,11 +303,17 @@ regulatory thresholds** (stated in code and docs).
 
 ## 8. Distance and TTC policy
 
-`Estimate { available, value, method }` is the only way to carry distance/TTC. The default
-estimators are `UNAVAILABLE`. If a future Stage 4.1 methodology justifies an uncalibrated
-monocular heuristic, it must tag itself `MONOCULAR_UNCALIBRATED`; UI must render such values as
-approximate. When information is
-insufficient, return `Estimate.unavailable()` — never a fabricated number.
+The legacy scalar `Estimate { available, value, method }` remains the Stage 0 `TrackedObject` /
+Risk Engine contract; default legacy `DistanceEstimator`/`TtcEstimator` remain UNAVAILABLE.
+Stage 4.1 deliberately adds **separate** immutable `physical.DistanceEstimate`,
+`RangeRateEstimate`, `TtcEstimate`, and `PhysicalEstimationSnapshot` contracts with source time,
+method, units, evidence quality, bounds where known and explicit NaN/reason for missing data.
+`RoadDetectionProcessor` publishes these diagnostics after Stage 4.0 on its existing processing
+thread. They are NOT copied into `TrackedObject`, RiskInput or warning logic. App defaults to no
+calibration/prior and can show only uncalibrated optical-expansion TTC, explicitly labelled.
+Optional FOV-derived intrinsics and class-size guesses are experimental, never safety-certified.
+No source calibration → no metric range/rate/TTC. See `docs/STAGE4_1_DISTANCE_TTC.md` for geometry,
+assumptions, source-time gating and failure modes; Stage 4.2 fusion is not implemented.
 
 ## 9. Threading model
 
@@ -302,7 +321,7 @@ insufficient, return `Estimate.unavailable()` — never a fabricated number.
 |-----------------------|--------------------------------------------------|-------------------------------------|
 | UI (main)             | Views, alert rendering/audio triggers            | run inference, block on network     |
 | Camera analysis executor (`zs-camera-analysis`, 1 thread) | ImageProxy → `Frame` (pool copy), `FramePipeline.onFrame` → `LatestFrameQueue.offer`, close ImageProxy | do heavy work; block; hold ImageProxy |
-| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker → image-space estimator (serial) | touch views; run in parallel (serial by design until measured) |
+| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker → image-space estimator → physical diagnostics (serial) | touch views; run in parallel (serial by design until measured) |
 | Risk thread (or inline after inference, bounded) | `RiskEngine`, `DrowsinessAnalyzer` | block on I/O          |
 | Network thread        | `ZholNetApi`, `ZholNetWebSocket`, offline queue  | influence the alert path            |
 

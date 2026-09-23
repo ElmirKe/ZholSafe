@@ -11,8 +11,10 @@ General rules
 2. Anything approximate is carried as `Estimate` with an explicit availability flag and method.
 3. Anything unknown is represented as unavailable (flag / sentinel documented below) — never
    defaulted to a value that could be mistaken for "safe".
-4. Timestamps inside the vehicle pipeline are monotonic nanoseconds (`System.nanoTime` domain);
-   wall-clock `Instant` is used only where the value leaves the device (`HazardEvent`).
+4. Vehicle pipeline source timestamps are monotonic nanoseconds within one `CameraSource`;
+   CameraX frame timestamps may use a camera/boottime domain, not necessarily the process
+   `System.nanoTime()` domain. `System.nanoTime()` is processing telemetry only and must not be
+   subtracted from source timestamps. Wall-clock `Instant` is used for `HazardEvent`.
 5. **Numeric hardening (Stage 0.1).** Every required numeric field, and every optional field
    whose availability flag is `true`, must be *finite* (NaN and ±Infinity rejected by the record
    constructor via `kz.zholsafe.model.Contracts`). `Float.NaN` is accepted **only** as the
@@ -293,5 +295,34 @@ Image-motion units: normalized X = frame-width fractions/second, normalized Y = 
 fractions/second (+Y down), normalized magnitude = hypot(X,Y) fractions/second, **not m/s**.
 Scale uses current normalized box area (dimensionless) and linear fit slope of log(area) against
 source seconds (dimensionless per second); APPROACHING/RECEDING describe apparent box-scale trends,
-**not physical closing or TTC**. Distance/TTC estimators remain explicitly unavailable until
-later, separately validated stages.
+**not physical closing or TTC**. This is the historical Stage 4.0 contract; Stage 4.1 adds
+separate explicitly method-labelled experimental depth/rate/TTC contracts below, without
+changing Stage 4.0 `ImageScaleTrend` or enabling legacy Risk Engine estimates.
+
+
+## Stage 4.1 — experimental physical estimation contracts (in-process, not wire v1)
+
+The Stage 0 `Estimate`/`EstimationMethod`, `TrackedObject.estimatedDistance`,
+`TrackedObject.estimatedTtc`, `RiskInput`, `VehicleContext`, and `HazardEvent` wire v1 are
+unchanged/unavailable. Stage 4.1 uses its own `kz.zholsafe.physical` contracts; no value is
+promoted into a risk input or a warning. Details and equations: `docs/STAGE4_1_DISTANCE_TTC.md`.
+
+| Contract | Units/meaning | Availability/provenance |
+|---|---|---|
+| `CameraCalibration` | Upright source W,H; fx,fy,cx,cy source px; h metres; pitch radians positive down | Strict finite/positive intrinsics and height, bounded pitch, `MEASURED_INTRINSICS` vs `FOV_DERIVED_APPROXIMATE`. No implicit instance. Exact frame dimension match. |
+| `ObjectSizePrior` | Explicit class-specific apparent HEIGHT min/nominal/max metres | `EXPERIMENTAL_UNVALIDATED` or explicitly supplied `MEASURED_FOR_OBJECT`. UNKNOWN rejected; shipped guesses opt-in only, never calibrated accuracy. |
+| `DistanceEstimate` | Camera optical-axis depth metres, not Euclidean/slant/road-path range | `GROUND_PLANE`, `OBJECT_SIZE`, `GROUND_PLANE_CROSS_CHECKED` (unchanged ground value); optional size-prior min/max bounds only. No quantified ground uncertainty: bounds flag false, bounds NaN. |
+| `RangeRateEstimate` | Signed relative optical-depth m/s; `closingSpeedMps=max(0,-rate)` for **available** fit; RMS metres; sample count | `METRIC_REGRESSION` only on same-track bounded physical depth samples, Stage 3 source time. Not animal/vehicle speed. No bbox pixel rate as m/s. |
+| `TtcEstimate` | seconds | `METRIC_RANGE` (depth/closing speed) vs `IMAGE_SCALE` (2/log-area-rate, LOW uncalibrated optical diagnostic) distinct; never blind average. |
+| `PhysicalObjectEstimate` | One track per source frame | state, id/class/source nanoseconds, distance/rate, independent metric & optical TTC, method-labelled selected diagnostic; LOST/tentative unavailable. |
+| `PhysicalEstimationSnapshot` | source nanoseconds; upright W,H; immutable object list | READY empty = successful empty road. NOT_STARTED / TRACKING_UNAVAILABLE / TRAJECTORY_UNAVAILABLE / INVALID_TIMESTAMP / ESTIMATOR_ERROR contain no objects and carry upstream statuses. |
+
+Every available physical scalar is finite and positive when its quantity requires it; a signed
+range-rate may be zero for an observed stationary fit. Every unavailable numeric quantity is
+**NaN**, never zero/Infinity, with an explicit `PhysicalReason`, `NOT_AVAILABLE` method and
+`UNAVAILABLE` engineering quality. Available source timestamps are positive; unavailable
+startup timestamp may be 0. `EvidenceQuality` (`LOW`, `MEDIUM`, `HIGH`) is **not a calibrated
+probability**; method quality and sample gates are configurable in `PhysicalEstimationConfig`
+and experimental. All snapshot lists and prior registries are copied, histories are numeric,
+per-track, bounded and cleared on failure/removal/source reset. FOV-derived and opt-in unvalidated
+prior distances stay `LOW` and cannot yield metric TTC under default `MEDIUM` gates.

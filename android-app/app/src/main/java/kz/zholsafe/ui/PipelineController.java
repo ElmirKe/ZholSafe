@@ -73,6 +73,8 @@ final class PipelineController {
         FrameSource source = mode == ZholSafeConfig.OperatingMode.LIVE
                 ? liveSourceFactory.get()
                 : new SyntheticFrameSource(DEMO_WIDTH, DEMO_HEIGHT, DEMO_ROTATION, DEMO_FPS);
+        // Stage 4.1 physical diagnostics are wired inline by RoadDetectionProcessor, but this
+        // default has NO measured calibration/prior: no metric depth/rate/TTC is invented.
         processor = new RoadDetectionProcessor(detectorFactory.get(), trackingConfig, TrajectoryConfig.defaults());
         processor.load(); // failure → processor reports MODEL NOT AVAILABLE; pipeline still runs and degrades
         pipeline = new FramePipeline(source, processor, telemetry);

@@ -2,6 +2,10 @@ package kz.zholsafe.pipeline;
 
 import kz.zholsafe.model.Detection;
 import kz.zholsafe.model.ObjectClass;
+import kz.zholsafe.physical.PhysicalEstimationSnapshot;
+import kz.zholsafe.physical.PhysicalObjectEstimate;
+import kz.zholsafe.physical.TtcEstimate;
+import kz.zholsafe.tracking.TrackState;
 import kz.zholsafe.trajectory.ObjectTrajectory;
 
 import java.util.Locale;
@@ -23,6 +27,7 @@ public final class DetectionReport {
             b.append("DETECTION UNAVAILABLE (").append(s.detectorState()).append(")\n");
             b.append("TRACKING UNAVAILABLE (").append(p.latestTracking().status()).append(")\n");
             b.append("IMAGE TRAJECTORY UNAVAILABLE (").append(p.latestTrajectory().status()).append(")\n");
+            b.append("PHYSICAL ESTIMATION UNAVAILABLE (").append(p.latestPhysical().status()).append(")\n");
             return b.toString();
         }
         b.append(String.format(Locale.ROOT, "INFER FPS ~%.1f  DETECTOR %.1f ms (pre %.1f / inf %.1f / post %.1f)%n",
@@ -69,6 +74,39 @@ public final class DetectionReport {
                         .append(" image-scale / ").append(object.motion().direction()).append(" image-motion\n");
             }
         }
+        PhysicalEstimationSnapshot physical = p.latestPhysical();
+        if (!physical.available() || physical.frameTimestampNanos() != s.frameTimestampNanos()) {
+            b.append("PHYSICAL ESTIMATION UNAVAILABLE (").append(physical.status()).append(")\n");
+        } else {
+            b.append("PHYSICAL DIAGNOSTICS (EXPERIMENTAL, NOT WARNINGS): ")
+                    .append(physical.objects().size()).append(" tracks\n");
+            int count = 0;
+            for (PhysicalObjectEstimate object : physical.objects()) {
+                if (object.trackState() != TrackState.CONFIRMED || count++ >= 3) continue;
+                b.append("  #").append(object.trackId()).append(" depth ");
+                if (object.distance().available()) {
+                    b.append(String.format(Locale.ROOT, "~%.1f m [%s/%s]",
+                            object.distance().meters(), object.distance().method(), object.distance().quality()));
+                } else b.append("UNAVAILABLE (").append(object.distance().reason()).append(')');
+                b.append("  relative rate ");
+                if (object.rangeRate().available()) {
+                    b.append(String.format(Locale.ROOT, "~%.1f m/s [%s]",
+                            object.rangeRate().rangeRateMps(), object.rangeRate().quality()));
+                } else b.append("UNAVAILABLE (").append(object.rangeRate().reason()).append(')');
+                appendTtc(b, "selected TTC", object.selectedTtc());
+                appendTtc(b, "metric TTC", object.metricTtc());
+                appendTtc(b, "optical TTC (uncalibrated)", object.imageScaleTtc());
+                b.append('\n');
+            }
+        }
         return b.toString();
+    }
+
+    private static void appendTtc(StringBuilder b, String label, TtcEstimate ttc) {
+        b.append("  ").append(label).append(' ');
+        if (ttc.available()) {
+            b.append(String.format(Locale.ROOT, "~%.1f s [%s/%s]", ttc.seconds(),
+                    ttc.method(), ttc.quality()));
+        } else b.append("UNAVAILABLE (").append(ttc.reason()).append(')');
     }
 }

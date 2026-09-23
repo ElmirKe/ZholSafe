@@ -6,18 +6,16 @@ import kz.zholsafe.tracking.TrackedObject;
 /**
  * Pluggable distance estimator.
  *
- * <p>A future Stage 4.1 estimator, IF justified by validation, may use an uncalibrated monocular
- * heuristic and must then return {@link kz.zholsafe.model.EstimationMethod#MONOCULAR_UNCALIBRATED}.
- * It can later be
- * replaced by calibrated monocular, stereo, radar, LiDAR or vehicle-sensor implementations
- * without changing the Risk Engine. Return {@link Estimate#unavailable()} when the inputs do not
- * justify an estimate (e.g. unknown class, truncated box). Produce values with
- * {@link Estimate#distance(double, kz.zholsafe.model.EstimationMethod)}: distance is {@code >= 0}.
+ * <p>Legacy Stage 0 scalar/Risk Engine port, deliberately UNAVAILABLE in Stage 4.1. It lacks
+ * calibration, source-time, uncertainty and per-track evidence. The separate Stage 4.1
+ * {@link kz.zholsafe.physical.PhysicalDistanceEstimator} returns rich, method-labelled physical
+ * diagnostics without modifying TrackedObject or RiskInput. Do not silently convert its values
+ * into this legacy port. Future integration requires independent validation and Stage 4.2 review.
  */
 public interface DistanceEstimator {
 
     Estimate estimateDistanceMeters(TrackedObject object, int frameWidth, int frameHeight);
 
-    /** Always-unavailable implementation, used until a real estimator exists and in tests. */
+    /** Always-unavailable legacy implementation (including Stage 4.1) and test default. */
     DistanceEstimator UNAVAILABLE = (object, w, h) -> Estimate.unavailable();
 }
