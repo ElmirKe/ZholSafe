@@ -3,19 +3,20 @@ package kz.zholsafe.ai;
 import kz.zholsafe.driver.DriverObservation;
 
 /**
- * DriverGuard per-frame analyzer contract: driver-camera frame in, raw observation out.
- *
- * <p>Temporal reasoning (eye-closure duration, PERCLOS) is NOT done here — it lives in
- * {@link kz.zholsafe.driver.DrowsinessAnalyzer}, which is pure Java and unit-testable.
- * Stage 3 provides the real implementation.
+ * Driver-facing camera analysis (Stage 3). Interface only; no implementation in Stage 2.
+ * Mirrors {@link RoadDetector}: Android-independent, fail-fast load, explicit state.
  */
 public interface DriverDetector extends AutoCloseable {
 
     void load() throws ModelNotAvailableException;
 
-    boolean isReady();
+    DetectorState state();
 
-    DriverObservation analyze(Frame frame) throws OnnxModel.InferenceException;
+    default boolean isReady() {
+        return state() == DetectorState.READY;
+    }
+
+    DriverObservation analyze(Frame frame) throws DetectionException;
 
     @Override
     void close();

@@ -3,13 +3,12 @@ package kz.zholsafe.pipeline;
 import kz.zholsafe.ai.Frame;
 
 /**
- * STAGE 2 INSERTION POINT. Consumes one frame on the processing executor.
+ * Consumes one frame on the processing executor.
  *
- * <p>Stage 1 ships {@link DiagnosticFrameProcessor} (counters + cheap statistics, no AI).
- * Stage 2 will provide a processor that runs {@link kz.zholsafe.ai.RoadDetector} and emits
- * {@code List<Detection>} using the canonical {@link kz.zholsafe.model.ObjectClass} via a model
- * {@link kz.zholsafe.ai.LabelMap} — a model class index is NEVER assumed to equal an
- * {@code ObjectClass} ordinal.
+ * <p>Implementations: {@link DiagnosticFrameProcessor} (Stage 1, no AI) and
+ * {@link RoadDetectionProcessor} (Stage 2, runs a {@link kz.zholsafe.ai.RoadDetector} and
+ * publishes a {@link DetectionSnapshot}). Model class indices reach canonical
+ * {@link kz.zholsafe.model.ObjectClass} only through {@link kz.zholsafe.ai.LabelMap}.
  *
  * <p>Contract: called from exactly one thread at a time; must not block indefinitely; must not
  * retain {@code frame.data()} after returning (the buffer is recycled). Exceptions are caught by

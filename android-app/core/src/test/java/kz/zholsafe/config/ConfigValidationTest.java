@@ -18,10 +18,10 @@ class ConfigValidationTest {
     @Test
     void detectorConfigRejectsBadValues() {
         DetectorConfig d = DetectorConfig.defaults();
-        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModel(), d.driverModel(), 1.5f, 0.5f, 10, 1));
-        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModel(), d.driverModel(), 0.5f, Float.NaN, 10, 1));
-        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModel(), d.driverModel(), 0.5f, 0.5f, 0, 1));
-        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModel(), d.driverModel(), 0.5f, 0.5f, 10, 0));
+        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModelDir(), d.executionProvider(), d.roadModel(), d.driverModel(), 1.5f, 0.5f, 10, 1));
+        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModelDir(), d.executionProvider(), d.roadModel(), d.driverModel(), 0.5f, Float.NaN, 10, 1));
+        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModelDir(), d.executionProvider(), d.roadModel(), d.driverModel(), 0.5f, 0.5f, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> new DetectorConfig(d.roadModelDir(), d.executionProvider(), d.roadModel(), d.driverModel(), 0.5f, 0.5f, 10, 0));
     }
 
     @Test

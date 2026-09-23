@@ -18,7 +18,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Engineering telemetry overlay (Stage 1). Detection overlay arrives in Stage 2. -->
+    <!-- Stage 2: detection boxes in upright-image coordinates mapped with fitCenter letterbox. -->
+    <kz.zholsafe.ui.DetectionOverlayView
+        android:id="@+id/detectionOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <!-- Engineering telemetry overlay (Stage 1 + Stage 2 detector lines). -->
     <TextView
         android:id="@+id/telemetryText"
         android:layout_width="0dp"

@@ -172,6 +172,68 @@ the processing executor is shut down with `shutdownNow()` + `awaitTermination(2s
 → `RUNNING` (first frame) ⇄ `DEGRADED` (last frame threw; recovers on next success) ;
 `UNAVAILABLE` (permission missing, no rear camera, init/bind failure, source error) ; `STOPPED`.
 
+### 5.2 Stage 2 RoadGuard detector (implemented)
+
+```
+Frame(NV21, rotation, source ts)
+  → RoadDetectionProcessor (FrameProcessor, processing thread)
+    → RoadDetector.detect(frame)                       core interface, Android-free
+      = OnnxRoadDetector                               model-agnostic; everything from ModelSpec
+        ├─ Nv21Preprocessor: NV21 → RGB, logical rotation, letterbox, normalise → float[] (reused)
+        ├─ TensorSession.run(...)                      ONNX boundary (app: OrtTensorSession over ONNX Runtime)
+        ├─ DetectionDecoder (YoloRawDecoder | YoloEnd2EndDecoder) → RawDetection[] (model-input px)
+        ├─ Nms.classAware (only if decoder.requiresNms())
+        ├─ LabelMap: model index → label → ObjectClass; unsupported → DROPPED
+        └─ LetterboxTransform.toSource → clamp → Detection[] (upright source px)
+    → DetectionSnapshot (latest only) → engineering UI / overlay
+```
+
+| Element | Where | Notes |
+|---|---|---|
+| `RoadDetector`, `DetectorState`, `DetectorInfo`, `DetectorTimings`, `DetectionException` | core `ai` | contract; exposes no ORT/ImageProxy/Bitmap/Context |
+| `ModelSpec` + `ModelSpecParser` | core `ai.spec` | one JSON per model dir; consistency validated (e.g. end2end ⇒ nmsInModel) |
+| `TensorSession`, `TensorSessionFactory`, `ModelFiles` | core `ai.infer` | ONNX implementation boundary; app supplies `OrtTensorSession`/`OrtSessionFactory`/`AssetModelFiles` |
+| `Nv21Preprocessor`, `LetterboxTransform` | core `ai.preprocess` | pixel-tested for 0/90/180/270, landscape/portrait/square letterbox, inverse + clamp |
+| `YoloRawDecoder`, `YoloEnd2EndDecoder`, `Nms` | core `ai.decode` | one decoder per real output contract; fail-fast shape validation |
+| `LabelMap` | core `ai` | label-string mapping only; aliases are label→label |
+| `RoadDetectionProcessor`, `DetectionSnapshot`, `DetectionReport` | core `pipeline` | Stage 2 FrameProcessor + latest snapshot + UI text |
+| `DetectorBenchmark`, `BenchmarkResult`, `AccuracyResult`, `EvaluationCategory` | core `benchmark` | identical-conditions harness; no results yet |
+| `FakeRoadDetector` | core `ai` | scripted; tests only — the app never instantiates it |
+
+**Coordinate convention (single, binding).** `Detection.box` is in **pixels of the upright source
+image** (`frame.uprightWidth × uprightHeight`, origin top-left). Model-input coordinates exist
+only inside the detector (`RawDetection`); stored-buffer coordinates exist only inside
+`Nv21Preprocessor`; view coordinates exist only inside `DetectionOverlayView`. `BoundingBox`
+pixel semantics from Stage 0 are preserved; after postprocessing boxes are finite, clamped,
+`x1<x2`, `y1<y2` (degenerate boxes discarded).
+
+**Rotation.** The preprocessor maps each model pixel → upright pixel → stored pixel
+(`90: x=uy, y=H-1-ux`; `180: x=W-1-ux, y=H-1-uy`; `270: x=W-1-uy, y=ux`). No rotated image is
+materialised. Because the letterbox is computed on the upright size, inverse-transformed boxes
+are already upright.
+
+**Decoders.** Ultralytics exports two genuinely different output contracts: raw detect head
+`[1, 4+nc, N]` (YOLOv8/YOLO11, `nms=False`; confidence = max class score; NMS in app) and
+end2end `[1, K, 6]` = `x1,y1,x2,y2,conf,cls` (YOLO26 default head, YOLOv10, YOLO11 `nms=True`;
+no NMS in app). The decoder is chosen by `ModelSpec.decoder`, never by model name; the wrong
+pairing fails at load with `MODEL_INCOMPATIBLE: …received output shape […]`. NMS is never applied
+twice.
+
+**Model loading and failure policy.** `load()` = spec → labels (count must equal `numClasses`,
+≥1 canonical class) → sha256 (if present) → session → I/O validation → READY. Any failure ⇒
+`DetectorState.ERROR` with a diagnostic; the pipeline still runs (DEGRADED) and every frame is a
+counted processing error. Per-frame `DetectionException` ⇒ counted, snapshot `available=false`;
+25 consecutive failures or a runtime shape mismatch ⇒ ERROR. **NO DETECTIONS** (READY + empty
+list) is always distinguishable from **DETECTION UNAVAILABLE** (`available=false`).
+
+**Offline.** Model files come from APK assets (synced from `models/road/**` at build time) or the
+app files dir. No download, no cloud inference, no INTERNET use by the detector.
+
+**Model strategy.** YOLO26n and YOLO11n are configured as peers (`models/road/yolo26n`,
+`models/road/yolo11n`); the active one is `DetectorConfig.roadModelDir`. Model selection is
+DEFERRED until benchmarked under identical conditions. Pretrained COCO exports cover only
+PERSON/DOG/HORSE/COW/SHEEP; GOAT/CAMEL need custom training.
+
 ## 6. DriverGuard
 
 `DriverDetector` (per-frame, Stage 3) → `DriverObservation` → `DrowsinessAnalyzer` (temporal:
@@ -201,7 +263,7 @@ insufficient, return `Estimate.unavailable()` — never a fabricated number.
 |-----------------------|--------------------------------------------------|-------------------------------------|
 | UI (main)             | Views, alert rendering/audio triggers            | run inference, block on network     |
 | Camera analysis executor (`zs-camera-analysis`, 1 thread) | ImageProxy → `Frame` (pool copy), `FramePipeline.onFrame` → `LatestFrameQueue.offer`, close ImageProxy | do heavy work; block; hold ImageProxy |
-| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` (Stage 1 diagnostic; Stage 2 `RoadDetector`, tracker) | touch views |
+| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS, serial) | touch views; run in parallel (serial by design until measured) |
 | Risk thread (or inline after inference, bounded) | `RiskEngine`, `DrowsinessAnalyzer` | block on I/O          |
 | Network thread        | `ZholNetApi`, `ZholNetWebSocket`, offline queue  | influence the alert path            |
 

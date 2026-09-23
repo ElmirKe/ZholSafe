@@ -72,7 +72,9 @@ java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (Stage 1/1.1: CameraX road-camera pipeline + telemetry overlay; no background/foreground service).
+# Android app (Stage 2: CameraX → ONNX Runtime road detector → telemetry + box overlay).
+# No model binaries are committed: place a legitimate export under models/road/<id>/ first
+# (models/README.md) or the app reports MODEL NOT AVAILABLE. Local/offline inference only.
 # Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
 # in the authoring environment (no Android SDK / Google Maven access); app sources were
 # compiled against API-shaped stubs only. See docs/DEVELOPMENT.md for the on-device test plan.
@@ -86,7 +88,7 @@ python3 scripts/check_contracts.py
 
 ## Development stages
 
-0 Foundation ✔ → 0.1 Contract hardening ✔ → 1 Android + CameraX frame pipeline ✔ (code; device run pending) → 2 RoadGuard (ONNX) → 3 DriverGuard →
+0 Foundation ✔ → 0.1 Contract hardening ✔ → 1/1.1 Android + CameraX frame pipeline ✔ (code; device run pending) → 2 RoadGuard ONNX detection architecture ✔ (code + JVM tests; real model & device run pending) → 2 RoadGuard (ONNX) → 3 DriverGuard →
 4 Tracking/trajectory/Risk Engine → 5 ZholNet server + PostGIS → 6 Integration + WebSocket +
 map → 7 Testing, profiling, optimisation, audit. See `docs/ROADMAP.md`.
 

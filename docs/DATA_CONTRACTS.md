@@ -226,3 +226,16 @@ for the LIVE road camera, the source's own monotonic clock for DEMO/TEST. Rules:
   `CameraSource` are meaningful (future tracking/TTC input).
 - Processing-duration / FPS telemetry uses the pipeline's local monotonic clock. Never subtract
   values from the two domains unless their compatibility is proven for the device.
+
+## Stage 2 — detection contracts (in-process)
+
+- `Detection.box` (`BoundingBox`, floats) = **pixels in the upright source image** of the frame
+  that produced it; `Detection.classId` = the MODEL's class index (diagnostic only),
+  `Detection.objectClass` = canonical class obtained via `LabelMap`. `timestampNanos` = the
+  frame's source/image timestamp. Confidence is the decoder's documented final score in [0,1].
+- Label mapping rule: model index → model label string → `ObjectClass`. Never index → ordinal.
+  Unsupported labels are dropped. Optional `labelAliases` in `model-spec.json` are label→label.
+- `DetectionSnapshot.available=false` means DETECTION UNAVAILABLE; consumers must not treat it as
+  zero detections.
+- `model-spec.json` schema: see `models/README.md`; validated by `ModelSpec` (Java) and
+  `ai-training/tests/test_model_specs.py` (Python) with identical rules.

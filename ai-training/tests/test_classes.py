@@ -8,7 +8,7 @@ from zholsafe_ai.classes import class_names, load_classes
 
 REPO = Path(__file__).resolve().parents[2]
 JAVA_ENUM = REPO / "android-app/core/src/main/java/kz/zholsafe/model/ObjectClass.java"
-LABEL_FILE = REPO / "models/road/zholsafe-road-classes.txt"
+MODELS_ROAD = REPO / "models/road"
 SERVER_ENUM = REPO / "zholnet-server/src/main/java/kz/zholsafe/server/hazard/HazardType.java"
 
 REQUIRED = {"horse", "cow", "sheep", "goat", "camel", "dog", "person"}
@@ -29,8 +29,10 @@ def test_java_enum_matches_registry():
     assert java_labels == set(class_names())
 
 
-def test_label_file_matches_registry():
-    assert LABEL_FILE.read_text(encoding="utf-8").split() == class_names()
+def test_registry_canonical_labels_are_lowercase_and_unique():
+    names = class_names()
+    assert names == [n.lower() for n in names]
+    assert len(names) == len(set(names))
 
 
 def test_server_enum_covers_registry():

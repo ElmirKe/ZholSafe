@@ -51,6 +51,28 @@ python3 scripts/check_contracts.py
 Stage 1 was **not** verified on hardware in the authoring environment (no SDK, no device);
 treat the steps above as the manual test plan.
 
+## Road detector (Stage 2) on a device
+
+1. Produce a legitimate `model.onnx` for at least one candidate (see `models/README.md`); commit
+   nothing binary. `syncModelAssets` (runs before `preBuild`) copies `models/road/**` into assets.
+   Without a model the overlay shows `STATUS: MODEL NOT AVAILABLE` and `DETECTION UNAVAILABLE`.
+2. Select the model with `DetectorConfig.roadModelDir` (`models/road/yolo11n` or `…/yolo26n`);
+   provider with `DetectorConfig.executionProvider` (`CPU` default; `NNAPI` falls back to CPU).
+3. Run the app: the overlay shows MODEL / STATUS, INFER FPS, detector ms split
+   (pre/inf/post), per-class counts (PERSON…CAMEL) and up to three `X DETECTED conf [box]` lines.
+   Boxes are drawn by `DetectionOverlayView` assuming `PreviewView` `fitCenter`; if the scale type
+   is changed the overlay disables itself rather than draw misleading boxes.
+4. Logcat tags: `OnnxDetector` (load diagnostics, provider, supported classes), `RoadDetection`,
+   `Pipeline`.
+
+### Benchmarking candidates
+
+`kz.zholsafe.benchmark.DetectorBenchmark` runs any `RoadDetector` over a frame list with warm-up
+and produces mean/median/P95 for total/pre/inference/post plus FPS. Compare YOLO26n vs YOLO11n
+only under identical conditions (device, ORT version, provider, frames, warm-up, thresholds) and
+record `BenchmarkResult.toReportLine()` output under `ai-training/benchmarks/results/`. Accuracy
+(`AccuracyResult`) requires labelled ground truth. No numbers exist yet.
+
 ## Rules for every stage (binding)
 
 1. Inspect the existing repository first; preserve working functionality; never create a

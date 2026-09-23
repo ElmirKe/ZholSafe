@@ -16,8 +16,12 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import kz.zholsafe.R;
+import kz.zholsafe.ai.AssetModelFiles;
+import kz.zholsafe.ai.OnnxRoadDetector;
+import kz.zholsafe.ai.OrtSessionFactory;
 import kz.zholsafe.app.ZholSafeApplication;
 import kz.zholsafe.camera.RoadCamera;
+import kz.zholsafe.config.DetectorConfig;
 import kz.zholsafe.config.ZholSafeConfig;
 import kz.zholsafe.logging.ZLog;
 
@@ -38,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     private PipelineController controller;
     private PreviewView previewView;
+    private DetectionOverlayView overlay;
     private TextView telemetryText;
     private Button modeButton;
     private Button retryButton;
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             telemetryText.setText(controller.renderTelemetry());
+            overlay.setSnapshot(controller.latestDetections());
             ui.postDelayed(this, UI_REFRESH_MS);
         }
     };
@@ -57,12 +63,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         previewView = findViewById(R.id.previewView);
+        overlay = findViewById(R.id.detectionOverlay);
+        overlay.setSupportedScaleType(previewView.getScaleType());
         telemetryText = findViewById(R.id.telemetryText);
         modeButton = findViewById(R.id.modeButton);
         retryButton = findViewById(R.id.retryButton);
 
         ZholSafeConfig config = ((ZholSafeApplication) getApplication()).config();
-        controller = new PipelineController(config.mode(), () -> new RoadCamera(this, this, previewView));
+        DetectorConfig det = config.detector();
+        AssetModelFiles files = new AssetModelFiles(this);
+        controller = new PipelineController(config.mode(),
+                () -> new RoadCamera(this, this, previewView),
+                () -> new OnnxRoadDetector(det.roadModelDir(), files, new OrtSessionFactory(det.executionProvider(), 2)));
 
         modeButton.setOnClickListener(v -> toggleMode());
         retryButton.setOnClickListener(v -> {

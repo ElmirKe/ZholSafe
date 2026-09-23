@@ -27,10 +27,31 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    packagingOptions {
-        // ONNX Runtime ships native libs; keep the default packaging (added in Stage 2).
+    // Model directories (models/road/<id>/{model.onnx,model-spec.json,labels.txt}) are copied
+    // from the repository into generated assets at build time — never by hand. ONNX binaries are
+    // git-ignored; if absent the app reports MODEL NOT AVAILABLE and never fakes detections.
+    sourceSets {
+        main {
+            assets.srcDirs += layout.buildDirectory.dir('generated/model-assets')
+        }
+    }
+
+    androidResources {
+        noCompress 'onnx'
     }
 }
+
+tasks.register('syncModelAssets', Copy) {
+    from(rootProject.file('../models')) {
+        include 'road/**'
+        exclude '**/README.md'
+    }
+    into layout.buildDirectory.dir('generated/model-assets/models')
+}
+preBuild.dependsOn syncModelAssets
+
+// Centralised runtime versions (Stage 2).
+def onnxRuntimeVersion = '1.19.2'
 
 dependencies {
     implementation project(':core')
@@ -48,8 +69,8 @@ dependencies {
     // Location — Stage 6 (declared early; unused in Stage 1).
     implementation 'com.google.android.gms:play-services-location:21.3.0'
 
-    // ONNX Runtime (Java API, Android AAR) — enabled in Stage 2.
-    // implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.18.0'
+    // ONNX Runtime (official Android AAR, Java API). Local inference only — no network.
+    implementation "com.microsoft.onnxruntime:onnxruntime-android:$onnxRuntimeVersion"
 
     testImplementation 'junit:junit:4.13.2'
 }
