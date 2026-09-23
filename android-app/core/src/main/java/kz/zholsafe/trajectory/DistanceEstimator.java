@@ -10,7 +10,8 @@ import kz.zholsafe.tracking.TrackedObject;
  * return {@link kz.zholsafe.model.EstimationMethod#MONOCULAR_UNCALIBRATED}. It can later be
  * replaced by calibrated monocular, stereo, radar, LiDAR or vehicle-sensor implementations
  * without changing the Risk Engine. Return {@link Estimate#unavailable()} when the inputs do not
- * justify an estimate (e.g. unknown class, truncated box).
+ * justify an estimate (e.g. unknown class, truncated box). Produce values with
+ * {@link Estimate#distance(double, kz.zholsafe.model.EstimationMethod)}: distance is {@code >= 0}.
  */
 public interface DistanceEstimator {
 

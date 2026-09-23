@@ -1,5 +1,7 @@
 package kz.zholsafe.config;
 
+import kz.zholsafe.model.Contracts;
+
 /**
  * DriverGuard thresholds.
  *
@@ -20,6 +22,14 @@ public record DriverGuardConfig(
         float perclosWarningFraction,
         long yawnRecentWindowMillis,
         float minFaceConfidence) {
+
+    public DriverGuardConfig {
+        Contracts.positive("prolongedEyeClosureMillis", prolongedEyeClosureMillis);
+        Contracts.positive("perclosWindowMillis", perclosWindowMillis);
+        Contracts.unit("perclosWarningFraction", perclosWarningFraction);
+        Contracts.positive("yawnRecentWindowMillis", yawnRecentWindowMillis);
+        Contracts.unit("minFaceConfidence", minFaceConfidence);
+    }
 
     public static DriverGuardConfig defaults() {
         return new DriverGuardConfig(

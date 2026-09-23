@@ -1,6 +1,7 @@
 package kz.zholsafe.config;
 
 import kz.zholsafe.ai.ModelDescriptor;
+import kz.zholsafe.model.Contracts;
 
 /**
  * Detector-side thresholds and model locations.
@@ -19,6 +20,15 @@ public record DetectorConfig(
         float nmsIouThreshold,
         int maxDetectionsPerFrame,
         int inferenceQueueCapacity) {
+
+    public DetectorConfig {
+        java.util.Objects.requireNonNull(roadModel, "roadModel");
+        java.util.Objects.requireNonNull(driverModel, "driverModel");
+        Contracts.unit("confidenceThreshold", confidenceThreshold);
+        Contracts.unit("nmsIouThreshold", nmsIouThreshold);
+        Contracts.positive("maxDetectionsPerFrame", maxDetectionsPerFrame);
+        Contracts.positive("inferenceQueueCapacity", inferenceQueueCapacity);
+    }
 
     public static final String DEFAULT_ROAD_MODEL_FILE = "zholsafe-road.onnx";
     public static final String DEFAULT_ROAD_LABELS_FILE = "zholsafe-road-classes.txt";

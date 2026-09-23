@@ -145,11 +145,14 @@ public final class BaselineRiskEngine implements RiskEngine {
                 reasons.add(RiskReason.OBJECT_CLOSING);
                 risk = Math.max(risk, config.collisionWeights().closing());
             }
-            if (t.estimatedTtc().available() && t.estimatedTtc().value() <= config.collisionWeights().lowTtcSeconds()) {
+            // Only a NON-NEGATIVE, available TTC is a forward-looking collision signal. A negative
+            // value cannot reach here via Estimate.ttc(), but the engine guards independently so it
+            // never classifies "already passed" as LOW_ESTIMATED_TTC (see Estimate javadoc).
+            if (t.estimatedTtc().isNonNegative() && t.estimatedTtc().value() <= config.collisionWeights().lowTtcSeconds()) {
                 reasons.add(RiskReason.LOW_ESTIMATED_TTC);
                 risk = Math.max(risk, config.collisionWeights().lowTtc());
             }
-            if (t.estimatedDistance().available()
+            if (t.estimatedDistance().isNonNegative()
                     && t.estimatedDistance().value() <= config.collisionWeights().lowDistanceMeters()) {
                 reasons.add(RiskReason.LOW_ESTIMATED_DISTANCE);
                 risk = Math.max(risk, config.collisionWeights().lowDistance());

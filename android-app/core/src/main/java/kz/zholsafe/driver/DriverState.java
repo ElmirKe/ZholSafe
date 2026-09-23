@@ -1,5 +1,7 @@
 package kz.zholsafe.driver;
 
+import kz.zholsafe.model.Contracts;
+
 import java.util.Objects;
 
 /**
@@ -7,6 +9,11 @@ import java.util.Objects;
  *
  * <p>All numeric fields carry an explicit availability flag or use a sentinel documented here,
  * so that missing data is never mistaken for "driver is fine".
+ *
+ * <p>Invariants (constructor-enforced): {@code eyeClosureDurationMillis >= 0};
+ * {@code confidence} finite in [0,1]; when {@code perclosAvailable} the {@code perclos} value is
+ * finite in [0,1]; when not available it MUST be the {@code Float.NaN} sentinel (a numeric value
+ * with the flag off would be a fabricated measurement and is rejected).
  *
  * @param faceDetected             face visible in the latest observation
  * @param eyesClosed               eyes judged closed in the latest observation (false if unknown)
@@ -31,8 +38,13 @@ public record DriverState(
 
     public DriverState {
         Objects.requireNonNull(headPose, "headPose");
-        if (eyeClosureDurationMillis < 0) {
-            throw new IllegalArgumentException("eyeClosureDurationMillis must be >= 0");
+        Contracts.nonNegative("eyeClosureDurationMillis", eyeClosureDurationMillis);
+        Contracts.unit("confidence", confidence);
+        if (perclosAvailable) {
+            Contracts.unit("perclos", perclos);
+        } else if (!Float.isNaN(perclos)) {
+            throw new IllegalArgumentException(
+                    "perclos must be NaN when perclosAvailable == false (no fabricated measurements), got " + perclos);
         }
     }
 

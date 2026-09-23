@@ -7,6 +7,7 @@ Never sacrifice a working P0 pipeline for P2/P3 features.
 
 | Stage | Scope | Exit criteria | Status |
 |-------|-------|---------------|--------|
+| **0.1** | Contract hardening: strict v1 enum validation on the server (UNKNOWN legitimate, malformed rejected), NaN/∞ rejection across numeric contracts, DriverState/TrackedObject/VehicleContext invariants, distance/TTC sign semantics, configuration constructor validation | All tests pass; no architecture change | **DONE** |
 | **0** | Architecture & foundation: monorepo, docs, data contracts, enums/interfaces, baseline Risk Engine + contract tests, Spring Boot skeleton with health test, Android skeleton, ai-training scaffold, config placeholders | Core tests pass; server builds & health test passes; docs frozen | **DONE** (this branch) — see Stage 0 report |
 | **1** | Java Android foundation + CameraX: permissions, road + driver camera `FrameSource`s, foreground service, `LatestFrameQueue` wiring, status UI, `AlertManager` (basic audio/visual), Gradle wrapper, DEMO `FrameSource` from file | App runs on device; frames flow to a no-op detector; pipeline states visible; UI thread never blocked | planned |
 | **2** | RoadGuard: Java + ONNX Runtime `OnnxRuntimeModel`, `YoloDetector` (preprocess/postprocess/NMS), model asset packaging, `ai-training` dataset prep + training + validation + ONNX export for initial classes | Real detections from `models/road/zholsafe-road.onnx` on device; graceful failure when missing; measured (not estimated) inference latency recorded | planned |

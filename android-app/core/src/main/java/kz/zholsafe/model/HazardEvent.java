@@ -47,17 +47,9 @@ public record HazardEvent(
         if (eventId.isBlank()) {
             throw new IllegalArgumentException("eventId must not be blank");
         }
-        if (confidence < 0f || confidence > 1f) {
-            throw new IllegalArgumentException("confidence must be in [0,1]");
-        }
-        if (risk < 0f || risk > 1f) {
-            throw new IllegalArgumentException("risk must be in [0,1]");
-        }
-        if (latitude < -90d || latitude > 90d) {
-            throw new IllegalArgumentException("latitude out of range: " + latitude);
-        }
-        if (longitude < -180d || longitude > 180d) {
-            throw new IllegalArgumentException("longitude out of range: " + longitude);
-        }
+        Contracts.unit("confidence", confidence);
+        Contracts.unit("risk", risk);
+        Contracts.range("latitude", latitude, -90d, 90d);
+        Contracts.range("longitude", longitude, -180d, 180d);
     }
 }

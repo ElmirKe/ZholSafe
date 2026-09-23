@@ -9,6 +9,9 @@ import kz.zholsafe.risk.VehicleContext;
  *
  * <p>Must return {@link Estimate#unavailable()} unless there is enough information (distance
  * estimate + closing speed, or a reliable scale-change series). Never fabricate a value.
+ * Produce values with {@link Estimate#ttc(double, kz.zholsafe.model.EstimationMethod)}. A
+ * mathematically negative TTC (not closing / closest approach already passed) is NOT a valid
+ * estimate in ZholSafe — return {@link Estimate#unavailable()} for it.
  */
 public interface TtcEstimator {
 

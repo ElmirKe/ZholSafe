@@ -1,5 +1,7 @@
 package kz.zholsafe.driver;
 
+import kz.zholsafe.model.Contracts;
+
 import java.util.Objects;
 
 /**
@@ -31,6 +33,11 @@ public record DriverObservation(
 
     public DriverObservation {
         Objects.requireNonNull(headPose, "headPose");
+        Contracts.unit("confidence", confidence);
+        Contracts.finiteOrNaN("eyeOpenness", eyeOpenness);
+        if (!Float.isNaN(eyeOpenness)) {
+            Contracts.unit("eyeOpenness", eyeOpenness);
+        }
     }
 
     /** Observation for "no face visible" — everything else unavailable. */

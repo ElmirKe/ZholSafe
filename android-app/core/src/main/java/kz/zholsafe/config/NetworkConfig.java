@@ -1,5 +1,7 @@
 package kz.zholsafe.config;
 
+import kz.zholsafe.model.Contracts;
+
 /**
  * ZholNet connectivity. No production secrets here — URLs only; credentials come from a future
  * device-identity provider.
@@ -16,6 +18,14 @@ public record NetworkConfig(
         int offlineQueueCapacity,
         long eventMinIntervalMillis,
         int nearbyRadiusMeters) {
+
+    public NetworkConfig {
+        java.util.Objects.requireNonNull(baseUrl, "baseUrl");
+        java.util.Objects.requireNonNull(webSocketUrl, "webSocketUrl");
+        Contracts.positive("offlineQueueCapacity", offlineQueueCapacity);
+        Contracts.nonNegative("eventMinIntervalMillis", eventMinIntervalMillis);
+        Contracts.positive("nearbyRadiusMeters", nearbyRadiusMeters);
+    }
 
     public static NetworkConfig defaults() {
         return new NetworkConfig(

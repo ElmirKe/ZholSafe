@@ -1,6 +1,7 @@
 package kz.zholsafe.tracking;
 
 import kz.zholsafe.model.BoundingBox;
+import kz.zholsafe.model.Contracts;
 import kz.zholsafe.model.Estimate;
 import kz.zholsafe.model.ObjectClass;
 import kz.zholsafe.model.Point2D;
@@ -46,6 +47,14 @@ public record TrackedObject(
         Objects.requireNonNull(estimatedDistance, "estimatedDistance");
         Objects.requireNonNull(estimatedTtc, "estimatedTtc");
         positionHistory = List.copyOf(Objects.requireNonNull(positionHistory, "positionHistory"));
+        Contracts.unit("confidence", confidence);
+        Contracts.nonNegative("ageFrames", (long) ageFrames);
+        if (estimatedDistance.available() && estimatedDistance.value() < 0d) {
+            throw new IllegalArgumentException("estimatedDistance must be >= 0 when available");
+        }
+        if (estimatedTtc.available() && estimatedTtc.value() < 0d) {
+            throw new IllegalArgumentException("estimatedTtc must be >= 0 when available (negative TTC => unavailable)");
+        }
     }
 
     public Point2D center() {

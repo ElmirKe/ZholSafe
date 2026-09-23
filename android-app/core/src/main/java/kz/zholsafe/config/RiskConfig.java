@@ -1,5 +1,6 @@
 package kz.zholsafe.config;
 
+import kz.zholsafe.model.Contracts;
 import kz.zholsafe.model.ObjectClass;
 import kz.zholsafe.risk.RiskLevel;
 
@@ -34,6 +35,11 @@ public record RiskConfig(
         Objects.requireNonNull(levelThresholds, "levelThresholds");
         Objects.requireNonNull(driverGuard, "driverGuard");
         classWeights = Map.copyOf(classWeights);
+        for (Map.Entry<ObjectClass, Float> e : classWeights.entrySet()) {
+            Contracts.unit("classWeights[" + e.getKey() + "]", e.getValue());
+        }
+        Contracts.unit("minConfidenceForRisk", minConfidenceForRisk);
+        Contracts.nonNegative("highSpeedMps", highSpeedMps);
     }
 
     /** Weight of each hazard class in [0,1]; unknown classes get {@code UNKNOWN}'s weight. */
@@ -54,7 +60,15 @@ public record RiskConfig(
             float eyesClosed,
             float prolongedEyeClosure,
             float highPerclos,
-            float yawning) { }
+            float yawning) {
+        public DriverWeights {
+            Contracts.unit("faceNotDetected", faceNotDetected);
+            Contracts.unit("eyesClosed", eyesClosed);
+            Contracts.unit("prolongedEyeClosure", prolongedEyeClosure);
+            Contracts.unit("highPerclos", highPerclos);
+            Contracts.unit("yawning", yawning);
+        }
+    }
 
     public record RoadWeights(
             float inCorridorFactor,
@@ -62,7 +76,16 @@ public record RiskConfig(
             float largeObjectAreaFraction,
             float largeObjectFactor,
             int multipleHazardsCount,
-            float multipleHazardsBonus) { }
+            float multipleHazardsBonus) {
+        public RoadWeights {
+            Contracts.unit("inCorridorFactor", inCorridorFactor);
+            Contracts.unit("outsideCorridorFactor", outsideCorridorFactor);
+            Contracts.unit("largeObjectAreaFraction", largeObjectAreaFraction);
+            Contracts.unit("largeObjectFactor", largeObjectFactor);
+            Contracts.positive("multipleHazardsCount", multipleHazardsCount);
+            Contracts.unit("multipleHazardsBonus", multipleHazardsBonus);
+        }
+    }
 
     public record CollisionWeights(
             float approachingCorridor,
@@ -70,18 +93,40 @@ public record RiskConfig(
             double lowTtcSeconds,
             float lowTtc,
             double lowDistanceMeters,
-            float lowDistance) { }
+            float lowDistance) {
+        public CollisionWeights {
+            Contracts.unit("approachingCorridor", approachingCorridor);
+            Contracts.unit("closing", closing);
+            Contracts.finite("lowTtcSeconds", lowTtcSeconds);
+            if (lowTtcSeconds < 0d) throw new IllegalArgumentException("lowTtcSeconds must be >= 0");
+            Contracts.unit("lowTtc", lowTtc);
+            Contracts.finite("lowDistanceMeters", lowDistanceMeters);
+            if (lowDistanceMeters < 0d) throw new IllegalArgumentException("lowDistanceMeters must be >= 0");
+            Contracts.unit("lowDistance", lowDistance);
+        }
+    }
 
     public record TotalWeights(
             float driver,
             float road,
             float collision,
             float driverRoadSynergy,
-            float highSpeedBoost) { }
+            float highSpeedBoost) {
+        public TotalWeights {
+            Contracts.unit("driver", driver);
+            Contracts.unit("road", road);
+            Contracts.unit("collision", collision);
+            Contracts.unit("driverRoadSynergy", driverRoadSynergy);
+            Contracts.unit("highSpeedBoost", highSpeedBoost);
+        }
+    }
 
     /** Monotonic thresholds: caution &lt;= warning &lt;= critical. */
     public record LevelThresholds(float caution, float warning, float critical) {
         public LevelThresholds {
+            Contracts.unit("caution", caution);
+            Contracts.unit("warning", warning);
+            Contracts.unit("critical", critical);
             if (!(caution <= warning && warning <= critical)) {
                 throw new IllegalArgumentException("thresholds must be monotonic");
             }

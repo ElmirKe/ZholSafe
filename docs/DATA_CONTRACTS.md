@@ -13,6 +13,24 @@ General rules
    defaulted to a value that could be mistaken for "safe".
 4. Timestamps inside the vehicle pipeline are monotonic nanoseconds (`System.nanoTime` domain);
    wall-clock `Instant` is used only where the value leaves the device (`HazardEvent`).
+5. **Numeric hardening (Stage 0.1).** Every required numeric field, and every optional field
+   whose availability flag is `true`, must be *finite* (NaN and ±Infinity rejected by the record
+   constructor via `kz.zholsafe.model.Contracts`). `Float.NaN` is accepted **only** as the
+   documented "unavailable" sentinel of a flagged/optional field, and then the flag must be
+   `false` — a numeric value with the flag off is treated as a fabricated measurement and
+   rejected. The same rule applies on the server (`HazardEventValidator`).
+
+### Sign semantics for distance and TTC (Stage 0.1 decision)
+
+| Quantity | Factory | Sign rule | Rationale |
+|----------|---------|-----------|-----------|
+| Distance (m) | `Estimate.distance(v, method)` | `v >= 0` | Physical magnitude; a negative distance is an estimator bug, not data. |
+| TTC (s) | `Estimate.ttc(v, method)` | `v >= 0` | ZholSafe defines TTC as time *until* a predicted collision. A mathematically negative TTC (not closing / closest approach already passed) carries no forward-looking collision information → estimators return `Estimate.unavailable()`. |
+
+`TrackedObject` re-checks both (rejects negative available distance/TTC even if constructed via
+the generic `Estimate.of`). `BaselineRiskEngine` uses `Estimate.isNonNegative()` before comparing
+against `lowTtcSeconds` / `lowDistanceMeters`, so a negative TTC can never produce
+`LOW_ESTIMATED_TTC`. This is a data-validity rule, not a new safety rule.
 
 ---
 
@@ -70,8 +88,10 @@ VEHICLE_SENSOR, SCALE_CHANGE`.
 | estimatedDistance  | Estimate (m)      | `distanceEstimated()` == `available()` |
 | estimatedTtc       | Estimate (s)      | `ttcEstimated()` == `available()` |
 | inDrivingCorridor  | boolean           | box intersects configured corridor |
-| ageFrames          | int               | |
+| ageFrames          | int ≥ 0           | |
 | timestampNanos     | long              | |
+
+Invariants: `confidence` finite in [0,1]; `ageFrames >= 0`; available distance/TTC `>= 0`.
 
 ## DriverObservation (per frame) — `kz.zholsafe.driver.DriverObservation`
 
@@ -80,6 +100,9 @@ VEHICLE_SENSOR, SCALE_CHANGE`.
 `DriverObservation.noFace(ts)` is the canonical "nothing seen" value.
 
 ## DriverState (temporal) — `kz.zholsafe.driver.DriverState`
+
+Invariants: `eyeClosureDurationMillis >= 0`; `confidence` finite in [0,1];
+`perclosAvailable=true ⇒ perclos` finite in [0,1]; `perclosAvailable=false ⇒ perclos == NaN`.
 
 | Field                    | Type     | Unavailable representation |
 |--------------------------|----------|----------------------------|
@@ -99,6 +122,7 @@ VEHICLE_SENSOR, SCALE_CHANGE`.
 ## VehicleContext — `kz.zholsafe.risk.VehicleContext`
 
 `speedAvailable, speedMps, nightMode`; `VehicleContext.UNKNOWN` when nothing is known.
+`speedAvailable=true ⇒ speedMps` finite and `>= 0`; `speedAvailable=false ⇒ speedMps == NaN`.
 
 ## RiskInput — `kz.zholsafe.risk.RiskInput`
 
@@ -143,14 +167,19 @@ JSON schema: `tests/contracts/hazard-event.v1.schema.json`; example:
 |-------------------|-----------|------------|-------|
 | eventId           | string    | non-blank; client UUID | dedupe key |
 | vehicleId         | string    | non-blank  | **untrusted / self-declared** |
-| hazardType        | string    | enum of `ObjectClass` names | unknown → `UNKNOWN` on server |
+| hazardType        | string    | exactly one of `PERSON, DOG, HORSE, COW, SHEEP, GOAT, CAMEL, UNKNOWN` (case-sensitive) | any other value is **rejected**; `UNKNOWN` is a legitimate canonical value, not a catch-all for malformed input |
 | confidence        | number    | [0,1]      | self-reported |
 | risk              | number    | [0,1]      | self-reported |
 | latitude          | number    | [-90,90]   | |
 | longitude         | number    | [-180,180] | |
 | timestamp         | string    | RFC 3339 UTC | client clock |
-| status            | string    | `ACTIVE, EXPIRED, CONFIRMED, DISMISSED` (client sends `ACTIVE`) | server-owned afterwards |
+| status            | string    | optional; if present exactly one of `ACTIVE, EXPIRED, CONFIRMED, DISMISSED` (client sends `ACTIVE`; absent ⇒ `ACTIVE`) | any other value is **rejected**; server-owned afterwards |
 | evidenceReference | string/null | optional | reserved; **not used in MVP** |
+
+**Forward-compatibility policy (v1):** the server validates enum values strictly against the v1
+list. A newer client sending a class outside v1 is rejected (HTTP 400 in Stage 5) — that is the
+intended signal to bump the contract version. `HazardType.fromWire()` is a lenient reader for
+persisted data and is *not* used for request validation. All numeric fields must be finite.
 
 Server-side lifecycle fields (not on the wire from the vehicle): `receivedAt, expiresAt,
 confirmationCount, clusterId` — see `database/schema/001_init.sql`. These enable future
@@ -161,6 +190,8 @@ status `CONFIRMED`) without changing the v1 client payload.
 
 `latitude, longitude, accuracyMeters (NaN if unknown), speedMps (NaN), bearingDeg (NaN),
 timestampMillis` with `speedAvailable()/bearingAvailable()/accuracyAvailable()`.
+Latitude/longitude finite and in range; optional fields are either `NaN` or finite (accuracy and
+speed additionally `>= 0`); ±Infinity is rejected everywhere.
 
 ## Frame — `kz.zholsafe.ai.Frame`
 
@@ -172,4 +203,6 @@ producer; consumers must not retain it.
 
 `ZholSafeConfig(mode, detector, tracking, risk, network, driverGuardEnabled, zholNetEnabled)`.
 All numeric thresholds/weights in the code base live here. Current defaults are **experimental
-Stage 0 values** and are the calibration surface for later stages.
+Stage 0 values** and are the calibration surface for later stages. Constructors validate:
+probabilities/fractions/weights in [0,1], positive queue sizes and time windows, corridor
+`left < right`, monotonic `caution <= warning <= critical`, non-negative TTC/distance thresholds.

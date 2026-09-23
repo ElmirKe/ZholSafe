@@ -1,5 +1,7 @@
 package kz.zholsafe.risk;
 
+import kz.zholsafe.model.Contracts;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -40,9 +42,7 @@ public record RiskAssessment(
     }
 
     private static void checkUnit(String name, float v) {
-        if (Float.isNaN(v) || v < 0f || v > 1f) {
-            throw new IllegalArgumentException(name + " must be in [0,1], got " + v);
-        }
+        Contracts.unit(name, v);
     }
 
     /** Baseline assessment when nothing is known and nothing is detected. */

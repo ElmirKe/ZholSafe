@@ -1,5 +1,7 @@
 package kz.zholsafe.config;
 
+import kz.zholsafe.model.Contracts;
+
 /**
  * Tracker and trajectory parameters (Stage 4 consumers).
  *
@@ -19,6 +21,19 @@ public record TrackingConfig(
         float corridorLeftFraction,
         float corridorRightFraction,
         float corridorTopFraction) {
+
+    public TrackingConfig {
+        Contracts.unit("iouMatchThreshold", iouMatchThreshold);
+        Contracts.positive("maxCoastFrames", maxCoastFrames);
+        Contracts.positive("minHitsToConfirm", minHitsToConfirm);
+        Contracts.positive("historyLength", historyLength);
+        Contracts.unit("corridorLeftFraction", corridorLeftFraction);
+        Contracts.unit("corridorRightFraction", corridorRightFraction);
+        Contracts.unit("corridorTopFraction", corridorTopFraction);
+        if (corridorLeftFraction >= corridorRightFraction) {
+            throw new IllegalArgumentException("corridorLeftFraction must be < corridorRightFraction");
+        }
+    }
 
     public static TrackingConfig defaults() {
         return new TrackingConfig(0.30f, 10, 2, 30, 0.30f, 0.70f, 0.40f);

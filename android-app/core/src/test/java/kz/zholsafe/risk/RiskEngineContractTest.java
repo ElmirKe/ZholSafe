@@ -68,8 +68,8 @@ class RiskEngineContractTest {
     void combinedSignalsEscalateToCritical() {
         TrackedObject horse = track(1, ObjectClass.HORSE, 0.94f, box(500, 300, 800, 700), true,
                 MovementClass.APPROACHING_CORRIDOR,
-                Estimate.of(12.0, EstimationMethod.MONOCULAR_UNCALIBRATED),
-                Estimate.of(1.8, EstimationMethod.MONOCULAR_UNCALIBRATED));
+                Estimate.distance(12.0, EstimationMethod.MONOCULAR_UNCALIBRATED),
+                Estimate.ttc(1.8, EstimationMethod.MONOCULAR_UNCALIBRATED));
         DriverState drowsy = new DriverState(true, true, 2000L, true, 0.4f, HeadPose.UNAVAILABLE,
                 false, 0.9f, 1L);
         RiskAssessment a = engine.evaluate(input(List.of(horse), drowsy));
@@ -115,6 +115,27 @@ class RiskEngineContractTest {
         RiskAssessment a = engine.evaluate(input(List.of(sheep), alertDriver()));
         assertFalse(a.reasons().contains(RiskReason.LOW_ESTIMATED_TTC));
         assertFalse(a.reasons().contains(RiskReason.LOW_ESTIMATED_DISTANCE));
+    }
+
+    @Test
+    void negativeTtcCanNeverBecomeLowEstimatedTtc() {
+        // Contract: a negative TTC is not a valid estimate. TrackedObject rejects it at construction,
+        // so the engine can only ever see unavailable or non-negative TTC values.
+        assertThrows(IllegalArgumentException.class, () -> track(1, ObjectClass.HORSE, 0.9f, box(500, 300, 800, 700), true,
+                MovementClass.STATIONARY, Estimate.unavailable(), Estimate.of(-1.0, EstimationMethod.SCALE_CHANGE)));
+        // And an unavailable TTC (which is what an estimator must return instead) yields no TTC reason.
+        TrackedObject horse = track(1, ObjectClass.HORSE, 0.9f, box(500, 300, 800, 700), true,
+                MovementClass.STATIONARY, Estimate.unavailable(), Estimate.unavailable());
+        RiskAssessment a = engine.evaluate(input(List.of(horse), alertDriver()));
+        assertFalse(a.reasons().contains(RiskReason.LOW_ESTIMATED_TTC));
+    }
+
+    @Test
+    void zeroTtcIsAValidLowTtc() {
+        TrackedObject horse = track(1, ObjectClass.HORSE, 0.9f, box(500, 300, 800, 700), true,
+                MovementClass.CLOSING, Estimate.unavailable(), Estimate.ttc(0d, EstimationMethod.SCALE_CHANGE));
+        RiskAssessment a = engine.evaluate(input(List.of(horse), alertDriver()));
+        assertTrue(a.reasons().contains(RiskReason.LOW_ESTIMATED_TTC));
     }
 
     @Test

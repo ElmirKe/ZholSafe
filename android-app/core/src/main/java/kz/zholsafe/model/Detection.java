@@ -28,9 +28,7 @@ public record Detection(
         if (box == null) {
             throw new IllegalArgumentException("box must not be null");
         }
-        if (confidence < 0f || confidence > 1f || Float.isNaN(confidence)) {
-            throw new IllegalArgumentException("confidence must be in [0,1], got " + confidence);
-        }
+        Contracts.unit("confidence", confidence);
     }
 
     /** Convenience accessor kept for readability at call sites. */
