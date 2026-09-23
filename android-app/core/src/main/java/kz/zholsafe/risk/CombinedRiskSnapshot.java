@@ -61,32 +61,32 @@ public record CombinedRiskSnapshot(
                 throw new IllegalArgumentException(
                         "unavailable fusion cannot publish a level and must explain the degradation");
             }
-            return;
-        }
-        if (combinedLevel.isEmpty()) {
-            throw new IllegalArgumentException("fused snapshot requires a combined level");
-        }
-        if (status == Status.ROAD_ONLY
-                && (roadLevel.isEmpty() || combinedLevel.get() != roadLevel.get())) {
-            throw new IllegalArgumentException("ROAD_ONLY must preserve the road level");
-        }
-        if (status == Status.DRIVER_ONLY
-                && (driverLevel.isEmpty() || combinedLevel.get() != driverLevel.get())) {
-            throw new IllegalArgumentException("DRIVER_ONLY must preserve the driver level");
-        }
-        if (status == Status.READY && (roadLevel.isEmpty() || driverLevel.isEmpty())) {
-            throw new IllegalArgumentException("READY fusion requires both component levels");
-        }
-        if (combinedLevel.get() != RiskLevel.NORMAL && reasons.isEmpty()) {
-            throw new IllegalArgumentException("non-NORMAL combined risk requires structured reasons");
-        }
-        if (roadLevel.isPresent() && driverLevel.isPresent()) {
-            RiskLevel maxComponent = roadLevel.get().ordinal() >= driverLevel.get().ordinal()
-                    ? roadLevel.get() : driverLevel.get();
-            if (combinedLevel.get().ordinal() > maxComponent.ordinal()
-                    && !reasons.contains(CombinedRiskReason.COMBINED_HAZARD_ESCALATION)) {
-                throw new IllegalArgumentException(
-                        "escalation above max(road, driver) requires COMBINED_HAZARD_ESCALATION");
+        } else {
+            if (combinedLevel.isEmpty()) {
+                throw new IllegalArgumentException("fused snapshot requires a combined level");
+            }
+            if (status == Status.ROAD_ONLY
+                    && (roadLevel.isEmpty() || combinedLevel.get() != roadLevel.get())) {
+                throw new IllegalArgumentException("ROAD_ONLY must preserve the road level");
+            }
+            if (status == Status.DRIVER_ONLY
+                    && (driverLevel.isEmpty() || combinedLevel.get() != driverLevel.get())) {
+                throw new IllegalArgumentException("DRIVER_ONLY must preserve the driver level");
+            }
+            if (status == Status.READY && (roadLevel.isEmpty() || driverLevel.isEmpty())) {
+                throw new IllegalArgumentException("READY fusion requires both component levels");
+            }
+            if (combinedLevel.get() != RiskLevel.NORMAL && reasons.isEmpty()) {
+                throw new IllegalArgumentException("non-NORMAL combined risk requires structured reasons");
+            }
+            if (roadLevel.isPresent() && driverLevel.isPresent()) {
+                RiskLevel maxComponent = roadLevel.get().ordinal() >= driverLevel.get().ordinal()
+                        ? roadLevel.get() : driverLevel.get();
+                if (combinedLevel.get().ordinal() > maxComponent.ordinal()
+                        && !reasons.contains(CombinedRiskReason.COMBINED_HAZARD_ESCALATION)) {
+                    throw new IllegalArgumentException(
+                            "escalation above max(road, driver) requires COMBINED_HAZARD_ESCALATION");
+                }
             }
         }
     }

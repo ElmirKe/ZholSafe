@@ -35,7 +35,8 @@ public final class CombinedRiskProcessor {
                 TrajectorySnapshot.Status.NOT_STARTED,
                 PhysicalEstimationSnapshot.Status.NOT_STARTED));
         this.latestDriver = new AtomicReference<>(DriverRiskSnapshot.notStarted());
-        this.latestCombined = new AtomicReference<>(evaluate());
+        this.latestCombined = new AtomicReference<>(
+                this.evaluator.evaluate(this.latestRoad.get(), this.latestDriver.get()));
     }
 
     /** Publishes the newest road risk snapshot (replaces the previous one). */

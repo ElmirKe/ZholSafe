@@ -14,7 +14,7 @@ import kz.zholsafe.model.Contracts;
  * microsleep, and ZholSafe never emits a medical diagnosis (no "drowsy driver" claims).
  *
  * @param eyeClosedThreshold              openness at/below which BOTH eyes count as CLOSED
- *                                        (classification uses min(left, right) openness)
+ *                                        (classification uses max(left, right) openness)
  * @param eyePartiallyClosedThreshold     openness at/below which eyes count PARTIALLY_CLOSED;
  *                                        must exceed {@code eyeClosedThreshold}
  * @param minimumObservationConfidence    below this, face/eye/mouth/pose evidence is not trusted

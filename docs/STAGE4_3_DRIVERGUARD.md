@@ -91,8 +91,10 @@ values are NaN with a false flag, face-derived measurements cannot exist without
 
 ## 4. Eye state (qualitative, configurable)
 
-`EyeState ∈ {OPEN, PARTIALLY_CLOSED, CLOSED, UNKNOWN}` from `min(left,right)` openness vs
+`EyeState ∈ {OPEN, PARTIALLY_CLOSED, CLOSED, UNKNOWN}` from `max(left,right)` openness vs
 `DriverGuardConfig.eyeClosedThreshold` (0.30) / `eyePartiallyClosedThreshold` (0.60).
+This conservative bilateral aggregate means CLOSED requires both eyes at or below the CLOSED
+threshold; a wink or unilateral occlusion does not accumulate bilateral closure time.
 **UNKNOWN** when the face is missing, eyes are not evaluable or confidence is below
 `minimumObservationConfidence` (0.50). UNKNOWN is never counted as OPEN or CLOSED — anywhere.
 No state (and certainly no "drowsiness") is inferred from one frame.
@@ -298,7 +300,7 @@ backend the wiring is symmetric to the road pipeline (same `FramePipeline`).
 ## 17. Known limitations
 
 - All thresholds are EXPERIMENTAL demo values, uncalibrated to any population, vehicle or camera.
-- Eye classification uses `min(left,right)` openness (both-eyes-closed semantics); winks count as
+- Eye classification uses `max(left,right)` openness (both-eyes-closed semantics); winks count as
   open — conservative for closure evidence.
 - PARTIALLY_CLOSED does not contribute to PERCLOS numerator (documented choice).
 - A young PERCLOS window is unavailable by design; early-trip coverage relies on the closure

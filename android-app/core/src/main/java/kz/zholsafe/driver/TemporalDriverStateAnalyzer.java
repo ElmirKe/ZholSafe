@@ -24,7 +24,8 @@ import java.util.Objects;
  * An observation yields eye evidence only when the face is detected, both eye-openness values are
  * available and confidence meets the configured minimum; otherwise the eye state is UNKNOWN and
  * the observation feeds neither the closure run nor the PERCLOS numerator/denominator
- * ("missing != open, missing != closed"). Both-eyes-closed uses min(left, right) openness.
+ * ("missing != open, missing != closed"). Bilateral eye state uses max(left, right) openness, so
+ * CLOSED requires both eyes to meet the closed threshold; a wink is not bilateral closure.
  *
  * <h2>Not a diagnosis</h2>
  * The produced {@link DriverState} is a bundle of temporal engineering evidence with EXPERIMENTAL
@@ -93,7 +94,7 @@ public final class TemporalDriverStateAnalyzer implements DriverStateAnalyzer {
         int eyeClass = EYE_INVALID;
         EyeState eyeState = EyeState.UNKNOWN;
         if (trusted && observation.eyeOpennessAvailable()) {
-            float openness = Math.min(observation.leftEyeOpenness(), observation.rightEyeOpenness());
+            float openness = Math.max(observation.leftEyeOpenness(), observation.rightEyeOpenness());
             if (openness <= config.eyeClosedThreshold()) {
                 eyeClass = EYE_CLOSED;
                 eyeState = EyeState.CLOSED;

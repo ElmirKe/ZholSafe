@@ -31,6 +31,48 @@ class TemporalDriverStateAnalyzerEyeTest {
         return state;
     }
 
+    private static DriverObservation faceEyesIndependently(long ts, float left, float right) {
+        return new DriverObservation(ts, true, true, left, right,
+                false, Float.NaN, HeadPose.UNAVAILABLE, 0.95f);
+    }
+
+    @Test
+    void leftEyeClosedRightEyeOpenIsNotBilateralClosure() {
+        DriverState state = analyzer.update(faceEyesIndependently(t(0.0), 0.0f, 0.9f));
+
+        assertEquals(EyeState.OPEN, state.eyeState());
+        assertEquals(0L, state.continuousEyeClosureNanos());
+    }
+
+    @Test
+    void rightEyeClosedLeftEyeOpenIsNotBilateralClosure() {
+        DriverState state = analyzer.update(faceEyesIndependently(t(0.0), 0.9f, 0.0f));
+
+        assertEquals(EyeState.OPEN, state.eyeState());
+        assertEquals(0L, state.continuousEyeClosureNanos());
+    }
+
+    @Test
+    void bothEyesClosedProduceBilateralClosure() {
+        DriverState state = analyzer.update(faceEyesIndependently(t(0.0), 0.0f, 0.0f));
+
+        assertEquals(EyeState.CLOSED, state.eyeState());
+    }
+
+    @Test
+    void sustainedUnilateralClosureDoesNotProduceProlongedClosureWarning() {
+        DriverState state = analyzer.current();
+        for (long ts = t(0.0); ts <= t(1.6); ts += 100_000_000L) {
+            state = analyzer.update(faceEyesIndependently(ts, 0.0f, 0.9f));
+        }
+
+        assertEquals(EyeState.OPEN, state.eyeState());
+        assertEquals(0L, state.continuousEyeClosureNanos());
+        DriverRiskSnapshot snapshot = risk.evaluate(state);
+        assertFalse(snapshot.level().orElseThrow().isAtLeast(RiskLevel.WARNING));
+        assertFalse(snapshot.reasons().contains(DriverRiskReason.PROLONGED_EYE_CLOSURE));
+    }
+
     @Test
     void openEyesProduceNormal() {
         DriverState state = DriverGuardTestSupport.feed(analyzer, 0, 2, ts -> faceEyes(ts, 0.9f));
