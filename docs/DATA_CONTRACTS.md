@@ -242,7 +242,7 @@ for the LIVE road camera, the source's own monotonic clock for DEMO/TEST. Rules:
 
 ## Stage 3 — RoadGuard tracking (in-process only)
 
-Stage 3 now means **RoadGuard tracking**; DriverGuard implementation is deferred to Stage 4.1.
+Stage 3 now means **RoadGuard tracking**; DriverGuard implementation is deferred to Stage 4.3.
 `ObjectTracker.update(detections, sourceTimestampNanos)` is called only after a successful detector
 run; successful empty detections count as misses. Detector failure freezes tracker state and publishes
 `TrackingSnapshot.Status.DETECTOR_UNAVAILABLE` (not READY with an empty list). Tracking rejects
@@ -265,3 +265,33 @@ counts successful detector frames since creation. All Stage 3 physical estimates
 IDs increase within a tracker instance and are not reused on reset; a fresh processor starts a
 new ID namespace. Default two-pass IoU/high/low thresholds, UNKNOWN policy and capacity limits:
 `docs/STAGE3_TRACKING.md`. These are in-process additions, not changes to HazardEvent wire v1.
+
+## Stage 4.0 — image-space trajectory (in-process only)
+
+`TrajectoryConfig` holds experimental thresholds and recent-window sizes (see
+`docs/STAGE4_0_TRAJECTORY.md`). `TrajectoryEstimator.estimate(TrackingSnapshot)` consumes Stage 3
+observation metadata; the legacy `classify(TrackedObject,w,h)` is conservative UNKNOWN because the
+old centre-only history lacks timestamped sample boxes. No changes to `TrackedObject`, `Estimate`,
+RiskInput or HazardEvent wire v1.
+
+`TrajectorySnapshot(frameTimestampNanos,uprightWidth,uprightHeight,status,upstreamStatus,objects)`
+is immutable. READY requires a READY tracking snapshot with positive source time/dimensions; an
+empty READY object list means successful processing with no tracks. NOT_STARTED,
+TRACKING_UNAVAILABLE and ESTIMATOR_ERROR contain **no objects**. `upstreamStatus` records whether
+an upstream detector/tracker failed; an estimator error leaves the tracking snapshot READY.
+
+`ObjectTrajectory` is immutable: positive track ID, canonical `ObjectClass`, last matched source
+nanosecond timestamp, upright pixel box and derived pixel centre, recent sample count (bounded),
+per-track `TrajectoryStatus` (AVAILABLE, INSUFFICIENT_HISTORY, INVALID_TIMESTAMPS, LOW_QUALITY,
+TRACK_NOT_CURRENT), `TrajectoryQuality`, `ImageMotion`, `ImageScaleTrend`, `ApproachState`, and fit
+residuals/time span. Except for AVAILABLE, numeric motion/scale/span/residuals are unavailable
+NaN with explicit flags, direction and scale UNCERTAIN. LOST/tentative/stale tracks have
+TRACK_NOT_CURRENT, never AVAILABLE image motion. Fit residuals are diagnostics, not calibrated
+confidence or safety values.
+
+Image-motion units: normalized X = frame-width fractions/second, normalized Y = frame-height
+fractions/second (+Y down), normalized magnitude = hypot(X,Y) fractions/second, **not m/s**.
+Scale uses current normalized box area (dimensionless) and linear fit slope of log(area) against
+source seconds (dimensionless per second); APPROACHING/RECEDING describe apparent box-scale trends,
+**not physical closing or TTC**. Distance/TTC estimators remain explicitly unavailable until
+later, separately validated stages.

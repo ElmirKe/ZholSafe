@@ -15,9 +15,9 @@ import java.util.Set;
 /**
  * STAGE 0 BASELINE — intentionally simple, fully explainable, configuration-driven.
  *
- * <p>This is NOT the final Stage 4 algorithm. It exists so that the contract is exercised by
+ * <p>This is NOT the final Stage 4.2 algorithm. It exists so that the contract is exercised by
  * real code and tests, and so that Stage 1–3 can wire the pipeline against a working engine.
- * Stage 4 will replace the scoring internals (not the interface) with trajectory-aware logic
+ * Stage 4.2 will replace the scoring internals (not the interface) with trajectory-aware logic
  * and calibration hooks.
  *
  * <p>Scoring (all numbers from {@link RiskConfig}):

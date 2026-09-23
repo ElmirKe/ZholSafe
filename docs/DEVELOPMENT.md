@@ -83,10 +83,19 @@ record `BenchmarkResult.toReportLine()` output under `ai-training/benchmarks/res
 ## Stage 3 tracking verification
 
 See `docs/STAGE3_TRACKING.md` for the algorithm, integration, limitations and reproducible JVM
-commands. Stage 3 is RoadGuard tracking; DriverGuard is deferred to Stage 4.1. The Stage 2.5 real
+commands. Stage 3 is RoadGuard tracking; DriverGuard is deferred to Stage 4.3. The Stage 2.5 real
 model desktop report is unchanged; Android build/device tracking remain NOT VERIFIED unless run on
 a configured Android SDK/device. For the overlay, an observed track shows `HORSE #17 0.82` (or
 `(tentative)`); a LOST box is not drawn, and no metres/TTC/risk is shown.
+
+## Stage 4.0 image-space trajectory verification
+
+`docs/STAGE4_0_TRAJECTORY.md` describes normalized units, regression, fit quality and explicit
+unavailability. `cd android-app && gradle :core:test` is the official JVM test command when
+Gradle/JUnit dependencies are available. The engineering text can show image-only motion and
+qualitative bbox-growth labels; the Stage 3 track-ID overlay is unchanged. No metre, m/s, TTC or
+risk warning is derived from this stage. Android SDK build/device run and official Gradle/JUnit
+must be reported separately as NOT EXECUTED when not run.
 
 ## Rules for every stage (binding)
 

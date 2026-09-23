@@ -72,11 +72,11 @@ Package root: `kz.zholsafe`
 | Package        | Module | Responsibility                                                                 | Stage |
 |----------------|--------|--------------------------------------------------------------------------------|-------|
 | `model`        | core   | Shared value types: `ObjectClass`, `Detection`, `BoundingBox`, `Estimate`, `HazardEvent`, `GeoPosition` | 0 |
-| `ai`           | core   | Inference contracts: `Frame`, `OnnxModel`, `RoadDetector`, `DriverDetector`, `LabelMap`, `ModelDescriptor`, `ModelNotAvailableException` | 0 (impl: 2 / deferred 4.1) |
+| `ai`           | core   | Inference contracts: `Frame`, `OnnxModel`, `RoadDetector`, `DriverDetector`, `LabelMap`, `ModelDescriptor`, `ModelNotAvailableException` | 0 (impl: 2 / deferred 4.3) |
 | `tracking`     | core   | `ObjectTracker`, `TrackedObject`, `MovementClass`                              | 0 (impl: 3) |
-| `trajectory`   | core   | `TrajectoryEstimator`, `DistanceEstimator`, `TtcEstimator` (pluggable, honest) | 0 (impl: 4) |
-| `driver`       | core   | `DriverObservation`, `DriverState`, `HeadPose`, `DrowsinessAnalyzer`           | 0 (impl: deferred 4.1) |
-| `risk`         | core   | `RiskEngine`, `RiskInput`, `RiskAssessment`, `RiskLevel`, `RiskReason`, `VehicleContext`, `BaselineRiskEngine` | 0 (final algo: 4) |
+| `trajectory`   | core   | `TrajectoryEstimator`, `DistanceEstimator`, `TtcEstimator` (pluggable, honest) | 0 (impl: 4.0/4.1) |
+| `driver`       | core   | `DriverObservation`, `DriverState`, `HeadPose`, `DrowsinessAnalyzer`           | 0 (impl: deferred 4.3) |
+| `risk`         | core   | `RiskEngine`, `RiskInput`, `RiskAssessment`, `RiskLevel`, `RiskReason`, `VehicleContext`, `BaselineRiskEngine` | 0 (final algo: 4.2) |
 | `config`       | core   | `ZholSafeConfig` root + `DetectorConfig`, `TrackingConfig`, `RiskConfig`, `DriverGuardConfig`, `NetworkConfig` | 0 |
 | `pipeline`     | core   | Ports: `FrameSource`, `LatestFrameQueue`, `AlertSink`, `HazardEventPublisher`, `PipelineState` | 0 |
 | `logging`      | core   | `ZLog` façade + standard `Event` names                                          | 0 |
@@ -95,9 +95,9 @@ CameraX ImageProxy ──(camera analysis executor)──► CameraFrameAdapter 
    ──(processing executor "zs-processing")──► FrameProcessor.process(Frame)
         Stage 1: DiagnosticFrameProcessor (counters, dims, rotation, cheap luma stat)
         Stage 2: detector processor → preprocess → OnnxModel.run → postprocess/NMS → List<Detection>
-   ──► ObjectTracker.update → TrackingSnapshot (Stage 3, no physical estimates)
-   ──► TrajectoryEstimator, Distance/TtcEstimator (future Stage 4)
-   ──(risk thread or same thread, bounded)──► RiskEngine.evaluate(RiskInput) → RiskAssessment
+   ──► ObjectTracker.update → TrackingSnapshot (Stage 3)
+   ──► TrajectoryEstimator.estimate → TrajectorySnapshot (Stage 4.0 IMAGE ONLY)
+   ──► Distance/TtcEstimator (future 4.1) → RiskEngine (future 4.2)
    ──► AlertSink (UI thread for rendering/audio) ; HazardEventPublisher (network thread)
 ```
 
@@ -146,7 +146,7 @@ is busy (counted as `droppedOrReplacedFrames`). Nothing anywhere can grow with l
 timestamp — for `RoadCamera` it is CameraX `ImageInfo.getTimestamp()` (camera capture time,
 device clock domain per Camera2 `SENSOR_INFO_TIMESTAMP_SOURCE`); for `SyntheticFrameSource` it is
 the source's injected clock. It is not wall-clock and not arrival time. Tracking (Stage 3)
-and future trajectory/TTC (Stage 4) must use differences between consecutive frames of the same
+and image trajectory (Stage 4.0) must use differences between consecutive frames of the same
 `CameraSource` only.
 Processing duration and FPS in `PipelineTelemetry` use the pipeline's local `System.nanoTime()`
 clock; the pipeline never subtracts a frame timestamp from its local clock.
@@ -257,11 +257,24 @@ tracking and freezes state (not a miss); successful empty detection advances the
 distance and TTC remain unavailable, movement UNKNOWN and corridor false. The overlay draws only
 currently observed tentative/confirmed tracks, labelled with their IDs; LOST boxes are stale and
 never drawn. See `docs/STAGE3_TRACKING.md` for defaults, failure/timestamp/cap policies and tests.
-Stage 4 inserts trajectory/distance/TTC/risk downstream; no such estimators run in Stage 3.
+Stage 4.0 adds image trajectory downstream; future Stage 4.1/4.2 cover justified physical
+estimates and risk respectively. No trajectory estimator ran in Stage 3 itself.
 
-## 6. DriverGuard (deferred Stage 4.1)
+### 5.4 Stage 4.0 image-space trajectory (implemented in core; device NOT VERIFIED)
 
-`DriverDetector` (per-frame, deferred Stage 4.1) → `DriverObservation` → `DrowsinessAnalyzer` (temporal:
+`RoadDetectionProcessor` runs `LinearImageTrajectoryEstimator` after successful tracking,
+inline on the same processing thread; it publishes a separate immutable `TrajectorySnapshot`.
+The estimator consumes only confirmed CURRENT `TrackView` observation history, fits normalized
+centre X/Y and log(normalized box area) against the source timestamps, and rejects poor fits.
+Tentative/LOST tracks have `TRACK_NOT_CURRENT`, not projected motion. Detector or tracker failure
+publishes trajectory unavailable, whereas successful zero detections is READY (possibly empty).
+All numerical output uses image fractions/second or dimensionless log-area/second; no physical
+`Estimate`, `MovementClass` mutation, TTC or risk integration is performed. `docs/STAGE4_0_TRAJECTORY.md`
+defines math, thresholds, timestamp/quality policy and limitations.
+
+## 6. DriverGuard (deferred Stage 4.3)
+
+`DriverDetector` (per-frame, deferred Stage 4.3) → `DriverObservation` → `DrowsinessAnalyzer` (temporal:
 eye-closure duration, PERCLOS window, recent yawn) → `DriverState` → `RiskInput`.
 All thresholds live in `DriverGuardConfig` and are **experimental demo values, not medical or
 regulatory thresholds** (stated in code and docs).
@@ -272,14 +285,15 @@ regulatory thresholds** (stated in code and docs).
 - Pure, deterministic, configuration-driven (`RiskConfig`), explainable (`RiskReason` list is
   mandatory for any level above `NORMAL`, enforced by the record constructor).
 - Stage 0 ships `BaselineRiskEngine` so the pipeline can be wired and the contract tests are
-  real. Stage 4 replaces its scoring internals — **not** the interface — and adds calibration
+  real. Stage 4.2 replaces its scoring internals — **not** the interface — and adds calibration
   hooks. There is exactly one Risk Engine for LIVE and DEMO.
 
 ## 8. Distance and TTC policy
 
 `Estimate { available, value, method }` is the only way to carry distance/TTC. The default
-estimators are `UNAVAILABLE`. A monocular uncalibrated heuristic (Stage 4) must tag itself
-`MONOCULAR_UNCALIBRATED`; UI must render such values as approximate. When information is
+estimators are `UNAVAILABLE`. If a future Stage 4.1 methodology justifies an uncalibrated
+monocular heuristic, it must tag itself `MONOCULAR_UNCALIBRATED`; UI must render such values as
+approximate. When information is
 insufficient, return `Estimate.unavailable()` — never a fabricated number.
 
 ## 9. Threading model
@@ -288,7 +302,7 @@ insufficient, return `Estimate.unavailable()` — never a fabricated number.
 |-----------------------|--------------------------------------------------|-------------------------------------|
 | UI (main)             | Views, alert rendering/audio triggers            | run inference, block on network     |
 | Camera analysis executor (`zs-camera-analysis`, 1 thread) | ImageProxy → `Frame` (pool copy), `FramePipeline.onFrame` → `LatestFrameQueue.offer`, close ImageProxy | do heavy work; block; hold ImageProxy |
-| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker (serial) | touch views; run in parallel (serial by design until measured) |
+| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` → `RoadDetectionProcessor` → `OnnxRoadDetector` (preprocess + ORT run + decode + NMS) → tracker → image-space estimator (serial) | touch views; run in parallel (serial by design until measured) |
 | Risk thread (or inline after inference, bounded) | `RiskEngine`, `DrowsinessAnalyzer` | block on I/O          |
 | Network thread        | `ZholNetApi`, `ZholNetWebSocket`, offline queue  | influence the alert path            |
 
@@ -334,7 +348,7 @@ labelled as demo in the UI; no performance claims may be derived from demo playb
 ## 14. Deferred decisions (explicitly open)
 
 - Exact YOLO variant/size and ONNX Runtime execution provider (NNAPI vs CPU) — Stage 2, by measurement.
-- Driver model type (classifier vs. landmarks) — deferred Stage 4.1.
+- Driver model type (classifier vs. landmarks) — deferred Stage 4.3.
 - Map library for the web monitor (Leaflet planned) — Stage 6.
 - Migration tool for the database (Flyway/Liquibase) — Stage 5.
 

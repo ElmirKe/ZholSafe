@@ -2,6 +2,7 @@ package kz.zholsafe.pipeline;
 
 import kz.zholsafe.model.Detection;
 import kz.zholsafe.model.ObjectClass;
+import kz.zholsafe.trajectory.ObjectTrajectory;
 
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +22,7 @@ public final class DetectionReport {
         if (!s.available()) {
             b.append("DETECTION UNAVAILABLE (").append(s.detectorState()).append(")\n");
             b.append("TRACKING UNAVAILABLE (").append(p.latestTracking().status()).append(")\n");
+            b.append("IMAGE TRAJECTORY UNAVAILABLE (").append(p.latestTrajectory().status()).append(")\n");
             return b.toString();
         }
         b.append(String.format(Locale.ROOT, "INFER FPS ~%.1f  DETECTOR %.1f ms (pre %.1f / inf %.1f / post %.1f)%n",
@@ -52,6 +54,20 @@ public final class DetectionReport {
             b.append("TRACKS: confirmed ").append(tracks.confirmedCount())
                     .append(" tentative ").append(tracks.tentativeCount())
                     .append(" lost ").append(tracks.lostCount()).append('\n');
+        }
+        TrajectorySnapshot trajectory = p.latestTrajectory();
+        if (!trajectory.available() || trajectory.frameTimestampNanos() != s.frameTimestampNanos()) {
+            b.append("IMAGE TRAJECTORY UNAVAILABLE (").append(trajectory.status()).append(")\n");
+        } else {
+            b.append("IMAGE TRAJECTORIES (normalized only): ").append(trajectory.availableCount())
+                    .append('/').append(trajectory.objects().size()).append(" available\n");
+            int count = 0;
+            for (ObjectTrajectory object : trajectory.objects()) {
+                if (!object.available()) continue;
+                if (count++ >= 3) break;
+                b.append("  #").append(object.trackId()).append(' ').append(object.approach())
+                        .append(" image-scale / ").append(object.motion().direction()).append(" image-motion\n");
+            }
         }
         return b.toString();
     }

@@ -23,7 +23,7 @@ import java.util.Objects;
  * CameraX {@code ImageInfo.getTimestamp()} (camera capture time); for DEMO/TEST sources it is
  * whatever monotonic clock that source uses. It is NOT wall-clock time and NOT the time the frame
  * reached the pipeline. Timestamps are only comparable between consecutive frames of the same
- * {@link CameraSource}; tracking (Stage 3) and trajectory/TTC (Stage 4) must difference those and must never
+ * {@link CameraSource}; tracking (Stage 3) and image trajectory (Stage 4.0) / future TTC (Stage 4.1) must difference those and must never
  * subtract a Frame timestamp from {@code System.nanoTime()} or from another source's timestamp.
  * Processing-duration and FPS telemetry use the pipeline's own monotonic clock instead.
  *

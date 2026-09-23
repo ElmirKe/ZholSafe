@@ -3,6 +3,7 @@ package kz.zholsafe.ui;
 import kz.zholsafe.ai.RoadDetector;
 import kz.zholsafe.config.ZholSafeConfig;
 import kz.zholsafe.config.TrackingConfig;
+import kz.zholsafe.config.TrajectoryConfig;
 import kz.zholsafe.pipeline.DetectionReport;
 import kz.zholsafe.pipeline.DetectionSnapshot;
 import kz.zholsafe.pipeline.FramePipeline;
@@ -72,7 +73,7 @@ final class PipelineController {
         FrameSource source = mode == ZholSafeConfig.OperatingMode.LIVE
                 ? liveSourceFactory.get()
                 : new SyntheticFrameSource(DEMO_WIDTH, DEMO_HEIGHT, DEMO_ROTATION, DEMO_FPS);
-        processor = new RoadDetectionProcessor(detectorFactory.get(), trackingConfig);
+        processor = new RoadDetectionProcessor(detectorFactory.get(), trackingConfig, TrajectoryConfig.defaults());
         processor.load(); // failure → processor reports MODEL NOT AVAILABLE; pipeline still runs and degrades
         pipeline = new FramePipeline(source, processor, telemetry);
         pipeline.start();

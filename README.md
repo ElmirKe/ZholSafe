@@ -10,10 +10,10 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 3 RoadGuard tracking implemented on JVM; Android/device NOT VERIFIED.**
+> **Status: Stage 4.0 image-space trajectory implemented on JVM; Android/device NOT VERIFIED.**
 > Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
 > UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
-> `docs/STAGE3_TRACKING.md` and `docs/ROADMAP.md`.
+> `docs/STAGE3_TRACKING.md`, `docs/STAGE4_0_TRAJECTORY.md` and `docs/ROADMAP.md`.
 
 ## Architecture in one picture
 
@@ -22,7 +22,7 @@ Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
               ├─► LatestFrameQueue ─► RoadDetector (Java + ONNX RT)  │  ZholNet Server      │
  Driver cam ──┘        │                  │                          │  Java 21 Spring Boot │
                        ▼                  ▼                          │  PostgreSQL + PostGIS│
-              DriverDetector        ObjectTracker → Trajectory/TTC   └──────────▲───────────┘
+              DriverDetector        ObjectTracker → ImageTrajectory   └──────────▲───────────┘
                        │                  │                                     │ HTTPS REST (compact events)
                        └──────► RiskEngine (Java, explainable) ◄── VehicleContext│ WebSocket (notifications)
                                    │                   │                        │
@@ -30,8 +30,10 @@ Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
                              works fully offline      (best effort)
 ```
 
-The local warning path never depends on internet, server, database, cloud or other vehicles.
-Details: `docs/ARCHITECTURE.md`.
+This diagram shows the **target architecture**: DriverGuard, physical distance/TTC and Risk Engine
+fusion are still future stages. Stage 4.0's ImageTrajectory is image-only, not a warning or physical
+measurement. The eventual local warning path never depends on internet, server, database, cloud or
+other vehicles. Details: `docs/ARCHITECTURE.md`.
 
 ## Technologies
 
@@ -49,7 +51,7 @@ Details: `docs/ARCHITECTURE.md`.
 
 | Directory          | Responsibility |
 |--------------------|----------------|
-| `android-app/core` | Pure-Java contracts, road detection and Stage 3 tracking, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
+| `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking and Stage 4.0 image trajectory, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
 | `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
 | `zholnet-server`   | Spring Boot server: health endpoint, hazard event DTO + validator, module boundaries |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
@@ -73,7 +75,7 @@ java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (Stage 2: CameraX → ONNX Runtime road detector → telemetry + box overlay).
+# Android app (Stage 4.0 code: CameraX → detector → tracker → image trajectory telemetry).
 # No model binaries are committed: place a legitimate export under models/road/<id>/ first
 # (models/README.md) or the app reports MODEL NOT AVAILABLE. Local/offline inference only.
 # Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
@@ -91,9 +93,9 @@ python3 scripts/check_contracts.py
 
 0/0.1 Foundation & contracts ✔ → 1/1.1 CameraX pipeline ✔ (code; device pending) →
 2/2.1 RoadGuard ONNX detection ✔ (code/JVM) → 2.5 real YOLO11n desktop/JVM smoke ✔
-(Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4 Trajectory/Risk Engine →
-4.1 DriverGuard (deferred) → 5 ZholNet server + PostGIS → 6 Integration/WebSocket/map →
-7 Testing, profiling, audit. See `docs/ROADMAP.md`.
+(Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4.0 image-space trajectory ✔ (code/JVM) →
+4.1 Distance/TTC methodology → 4.2 Risk fusion → 4.3 DriverGuard (deferred) →
+5 ZholNet server + PostGIS → 6 Integration/WebSocket/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
 

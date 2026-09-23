@@ -17,7 +17,7 @@ package kz.zholsafe.risk;
  *   <li>Detection ≠ risk: a high-confidence hazard far from the corridor is not CRITICAL on its own.</li>
  *   <li>All weights/thresholds come from configuration, never literals in the engine.</li>
  * </ul>
- * The full algorithm is implemented in Stage 4; Stage 0 ships the contract and a minimal
+ * The full algorithm is implemented in Stage 4.2; Stage 0 ships the contract and a minimal
  * baseline implementation ({@link BaselineRiskEngine}) so that the pipeline can be wired and
  * tested end-to-end.
  */

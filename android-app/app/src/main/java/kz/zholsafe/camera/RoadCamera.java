@@ -172,7 +172,7 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
             }
             // Camera image timestamp (ImageInfo.getTimestamp(), nanoseconds, from the camera HAL /
             // Camera2 SENSOR_TIMESTAMP). This is the capture time, NOT the callback time, and is what
-            // Stage 3 tracking and future Stage 4 TTC will difference between consecutive frames of this source.
+            // Stage 3 tracking and future Stage 4.1 TTC will difference between consecutive frames of this source.
             // Processing-duration and FPS telemetry use System.nanoTime() separately (FramePipeline).
             long ts = image.getImageInfo().getTimestamp();
             Frame frame = adapter.convert(image, ts);

@@ -6,8 +6,9 @@ import kz.zholsafe.tracking.TrackedObject;
 /**
  * Pluggable distance estimator.
  *
- * <p>The MVP implementation (Stage 4) will be an UNCALIBRATED monocular heuristic and must
- * return {@link kz.zholsafe.model.EstimationMethod#MONOCULAR_UNCALIBRATED}. It can later be
+ * <p>A future Stage 4.1 estimator, IF justified by validation, may use an uncalibrated monocular
+ * heuristic and must then return {@link kz.zholsafe.model.EstimationMethod#MONOCULAR_UNCALIBRATED}.
+ * It can later be
  * replaced by calibrated monocular, stereo, radar, LiDAR or vehicle-sensor implementations
  * without changing the Risk Engine. Return {@link Estimate#unavailable()} when the inputs do not
  * justify an estimate (e.g. unknown class, truncated box). Produce values with
