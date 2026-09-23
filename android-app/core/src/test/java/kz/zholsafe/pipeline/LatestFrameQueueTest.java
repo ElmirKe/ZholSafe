@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 class LatestFrameQueueTest {
 
     private static Frame frame(long ts) {
-        return new Frame(2, 2, Frame.PixelFormat.RGB_888, ByteBuffer.allocate(12), ts, Frame.CameraSource.TEST);
+        return new Frame(2, 2, Frame.PixelFormat.RGB_888, ByteBuffer.allocate(12), 0, ts, Frame.CameraSource.TEST);
     }
 
     @Test

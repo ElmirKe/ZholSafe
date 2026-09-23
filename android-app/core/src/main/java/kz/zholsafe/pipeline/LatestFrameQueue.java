@@ -5,24 +5,36 @@ import kz.zholsafe.ai.Frame;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Single-slot, drop-oldest hand-off between the camera thread and the inference thread.
+ * Single-slot, drop-oldest hand-off between the camera thread and the processing thread.
  *
  * <p>Backpressure policy for real-time safety: a recent frame is more valuable than a backlog.
- * If inference is slower than capture, intermediate frames are discarded and counted in
- * {@link #droppedCount()} (useful for profiling in Stage 7). Never blocks the producer.
+ * If processing is slower than capture, the pending frame is <em>replaced</em> and counted in
+ * {@link #droppedCount()}. Never blocks the producer. Capacity is exactly one; there is no way
+ * to make it grow.
+ *
+ * <p>Stage 1 addition: {@link #offer(Frame)} returns the displaced frame (if any) so the producer
+ * can recycle its buffer immediately, and {@link #clear()} lets shutdown release a pending frame.
  */
 public final class LatestFrameQueue {
 
     private Frame latest;
     private final AtomicLong dropped = new AtomicLong();
+    private final AtomicLong offered = new AtomicLong();
 
-    /** Producer side: replaces any pending frame. Never blocks. */
-    public synchronized void offer(Frame frame) {
-        if (latest != null) {
+    /**
+     * Producer side: replaces any pending frame. Never blocks.
+     *
+     * @return the frame that was displaced (its buffer may now be recycled), or {@code null}
+     */
+    public synchronized Frame offer(Frame frame) {
+        offered.incrementAndGet();
+        Frame displaced = latest;
+        if (displaced != null) {
             dropped.incrementAndGet();
         }
         latest = frame;
         notifyAll();
+        return displaced;
     }
 
     /** Consumer side: blocks until a frame is available or the thread is interrupted. */
@@ -42,8 +54,21 @@ public final class LatestFrameQueue {
         return f;
     }
 
+    /** Removes and returns any pending frame without counting it as dropped (shutdown use). */
+    public synchronized Frame clear() {
+        Frame f = latest;
+        latest = null;
+        return f;
+    }
+
+    /** Frames replaced before being consumed. */
     public long droppedCount() {
         return dropped.get();
+    }
+
+    /** Total frames offered by producers. */
+    public long offeredCount() {
+        return offered.get();
     }
 
     public synchronized boolean isEmpty() {

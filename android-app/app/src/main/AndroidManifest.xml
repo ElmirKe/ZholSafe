@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Camera: road-facing and driver-facing analysis (Stage 1). -->
+    <!-- Camera: road-facing (rear) analysis in Stage 1; driver-facing is a later stage. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Location: GPS hazard events (Stage 6). Local warnings do NOT depend on it. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="true" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
     <application

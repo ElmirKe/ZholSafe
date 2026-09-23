@@ -17,8 +17,11 @@ cd android-app && ./gradlew :core:test            # once the Gradle wrapper is c
 #   fallback without Gradle (see scripts/jvm-fallback-build.sh header for env vars)
 ZS_JAVA=... ZS_ECJ=... ZS_JUNIT=... scripts/jvm-fallback-build.sh
 
-# Android app (requires Android SDK)
+# Android app (requires Android SDK 34 + network access to Google Maven for CameraX)
 cd android-app && ./gradlew :app:assembleDebug
+#   NOTE: no Gradle wrapper binary is committed yet (the build sandbox has no access to
+#   services.gradle.org, and wrapper jars are never fabricated). Use Android Studio or a local
+#   `gradle wrapper --gradle-version 8.7` once, then commit gradle/wrapper/*.
 
 # ZholNet server
 cd zholnet-server && mvn test          # or: mvn package && java -jar target/zholnet-server-*.jar
@@ -30,6 +33,23 @@ cd ai-training && pytest
 # Cross-module contract fixture check
 python3 scripts/check_contracts.py
 ```
+
+## Running the camera pipeline on a device (Stage 1)
+
+1. Open `android-app/` in Android Studio (SDK 34, JDK 17), let it sync CameraX 1.3.4.
+2. Run `app` on a physical device (the emulator's virtual rear camera works too but FPS numbers
+   are meaningless there). The Activity is landscape-locked.
+3. The app starts in **DEMO** (synthetic frames, no hardware). Tap **Switch to LIVE**; grant the
+   CAMERA permission once. Denying it shows `PIPELINE: UNAVAILABLE — CAMERA permission denied`
+   and the app keeps running; use **Retry camera** to re-request.
+4. The overlay shows MODE / CAMERA / PIPELINE, RESOLUTION + ROTATION, CAMERA FPS / PROCESSED FPS
+   (EMA estimates), RECEIVED / PROCESSED / REPLACED / ERRORS, and
+   `AI detector: NOT LOADED — STAGE 2`. Logcat tag `Pipeline` prints a summary on stop.
+5. Sanity checks: REPLACED grows only when the processor is slower than the camera; ERRORS stays
+   0; after backgrounding and returning, counters continue and no `zs-*` thread leaks.
+
+Stage 1 was **not** verified on hardware in the authoring environment (no SDK, no device);
+treat the steps above as the manual test plan.
 
 ## Rules for every stage (binding)
 

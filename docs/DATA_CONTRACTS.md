@@ -206,3 +206,12 @@ All numeric thresholds/weights in the code base live here. Current defaults are 
 Stage 0 values** and are the calibration surface for later stages. Constructors validate:
 probabilities/fractions/weights in [0,1], positive queue sizes and time windows, corridor
 `left < right`, monotonic `caution <= warning <= critical`, non-negative TTC/distance thresholds.
+
+## Stage 1 addition — `Frame` (in-process only, not a wire contract)
+
+`kz.zholsafe.ai.Frame` gained `int rotationDegrees` (0/90/180/270, validated) between `data` and
+`timestampNanos`, and `CameraSource.DEMO_SYNTHETIC`. Rationale: Stage 2 needs the rotation to
+build an upright model input without Stage 1 paying a per-frame pixel rotation. `width`/`height`
+remain the *stored* buffer dimensions; use `uprightWidth()/uprightHeight()` for the display
+orientation. `Frame` is never serialised and is not part of the ZholNet v1 contract; the only
+existing constructor call site (a core test) was updated.

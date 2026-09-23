@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ZholSafe</string>
-    <string name="status_placeholder">ZholSafe — Stage 0 skeleton. Camera pipeline arrives in Stage 1.</string>
+    <string name="status_placeholder">ZholSafe — starting pipeline…</string>
+    <string name="status_camera_permission_denied">CAMERA permission denied — LIVE mode unavailable. Use DEMO or tap Retry camera.</string>
+    <string name="action_switch_to_live">Switch to LIVE</string>
+    <string name="action_switch_to_demo">Switch to DEMO</string>
+    <string name="action_retry_camera">Retry camera</string>
     <string name="status_model_missing">Road model not found. See models/README.md.</string>
     <string name="status_camera_unavailable">Camera unavailable.</string>
     <string name="status_gps_unavailable">GPS unavailable — local detection continues.</string>

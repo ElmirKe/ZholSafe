@@ -90,8 +90,11 @@ Package root: `kz.zholsafe`
 ## 5. Processing pipeline (RoadGuard)
 
 ```
-CameraX ImageProxy ──(camera thread)──► Frame ──► LatestFrameQueue (single slot, drop-oldest)
-   ──(inference thread)──► preprocess → OnnxModel.run → postprocess/NMS → List<Detection>
+CameraX ImageProxy ──(camera analysis executor)──► CameraFrameAdapter → Frame (pooled NV21)
+   ──► FramePipeline.onFrame → LatestFrameQueue (single slot, drop-oldest, counted)
+   ──(processing executor "zs-processing")──► FrameProcessor.process(Frame)
+        Stage 1: DiagnosticFrameProcessor (counters, dims, rotation, cheap luma stat)
+        Stage 2: detector processor → preprocess → OnnxModel.run → postprocess/NMS → List<Detection>
    ──► ObjectTracker.update → List<TrackedObject> (+ TrajectoryEstimator, Distance/TtcEstimator)
    ──(risk thread or same thread, bounded)──► RiskEngine.evaluate(RiskInput) → RiskAssessment
    ──► AlertSink (UI thread for rendering/audio) ; HazardEventPublisher (network thread)
@@ -100,6 +103,63 @@ CameraX ImageProxy ──(camera thread)──► Frame ──► LatestFrameQue
 **Detection ≠ Risk.** A detection states presence; risk is a function of class weight,
 confidence, corridor position, trajectory, distance/TTC *if available*, driver state and vehicle
 context. `RiskEngineContractTest.detectionAloneIsNotCritical` guards this.
+
+### 5.1 Stage 1 camera pipeline (implemented)
+
+Core (`kz.zholsafe.pipeline`, pure Java, JVM-tested):
+
+| Class | Role |
+|---|---|
+| `FrameSource` | Producer contract (`start(listener)`, `stop()`); LIVE and DEMO differ **only** here. |
+| `LatestFrameQueue` | Capacity-1 hand-off. `offer()` returns the displaced frame so its buffer is recycled immediately; `clear()` drains at shutdown. |
+| `FramePipeline` | Owns the single processing executor, wires source → queue → processor, maintains `PipelineTelemetry`/`PipelineState`, catches processor exceptions. |
+| `FrameProcessor` | **Stage 2 insertion point** — one frame in, nothing out yet. |
+| `DiagnosticFrameProcessor` | Stage 1 placeholder: dims/rotation/timestamp + sparse mean-luma. Not detection. |
+| `PipelineTelemetry` | Counters (received / processed / droppedOrReplaced / errors), last dims, rotation, timestamp, EMA FPS. |
+| `TelemetryReport` | Renders the engineering overlay text (unit-tested wording). |
+| `FrameBufferRecycler` | Optional source hook: pipeline returns frames after processing / displacement / shutdown. |
+| `SyntheticFrameSource` | Deterministic DEMO/TEST source (moving NV21 gradient, double-buffered). |
+
+App (`kz.zholsafe.camera`, the only package importing `androidx.camera.*`):
+
+| Class | Role |
+|---|---|
+| `RoadCamera` | `FrameSource` over CameraX: `ProcessCameraProvider` → `DEFAULT_BACK_CAMERA` (fails to UNAVAILABLE if absent) → `Preview` + `ImageAnalysis(STRATEGY_KEEP_ONLY_LATEST, YUV_420_888, target 1280×720)` bound to the Activity lifecycle. |
+| `CameraFrameAdapter` | `ImageProxy` → packed NV21 `Frame` using a fixed pool of 3 direct buffers. Handles interleaved (fast, bulk row copy) and planar (generic) chroma layouts. |
+
+`kz.zholsafe.ui.PipelineController` (plain Java) selects the source per mode and owns the
+`FramePipeline`; `MainActivity` only does permission UX, lifecycle and rendering.
+
+**ImageProxy ownership.** The proxy never leaves `RoadCamera.analyze()`: it is closed in a
+`finally` on every path (normal, pool exhausted → frame skipped, conversion exception, camera
+already stopping). Only width, height, rotation, timestamp and pixel bytes are copied into the
+core `Frame`. Frame buffers are returned to the pool via `FrameBufferRecycler` after processing,
+on displacement in the queue, and when the queue is drained at `stop()`. Steady-state allocation
+per frame is one small `Frame` record.
+
+**Backpressure** is two-stage and both stages are bounded: CameraX keeps only the latest image
+while the analyzer is busy; `LatestFrameQueue` keeps only the latest `Frame` while the processor
+is busy (counted as `droppedOrReplacedFrames`). Nothing anywhere can grow with load.
+
+**Rotation.** `Frame.rotationDegrees` = CameraX `ImageInfo.getRotationDegrees()` (clockwise
+rotation that makes the stored buffer upright for the current display orientation; derived from
+sensor orientation and display rotation). Pixels are **not** rotated in Stage 1 — that would be a
+full copy per frame. Stage 2 must apply it during tensor preprocessing (rotate-while-resize is
+free) and either map boxes back into stored coordinates or document that detections are in
+upright coordinates. `Frame.uprightWidth()/uprightHeight()` are provided for that purpose.
+
+**CameraX lifecycle.** `start()`/`stop()` run on the main thread. Use cases are bound to the
+Activity's `LifecycleOwner`; `onStop()` → `PipelineController.stop()` → `FramePipeline.stop()`
+→ `RoadCamera.stop()` (clearAnalyzer, unbindAll, terminate analysis executor, clear pool) and
+the processing executor is shut down with `shutdownNow()` + `awaitTermination(2s)`.
+
+**Permission.** CAMERA is requested once per session when LIVE starts. Denied → pipeline
+`UNAVAILABLE — CAMERA permission denied`, no crash, no automatic re-prompt; the user can tap
+"Retry camera" or switch to DEMO.
+
+**Pipeline states (Stage 1 usage).** `NOT_STARTED` → `STARTING` (source started, no frame yet)
+→ `RUNNING` (first frame) ⇄ `DEGRADED` (last frame threw; recovers on next success) ;
+`UNAVAILABLE` (permission missing, no rear camera, init/bind failure, source error) ; `STOPPED`.
 
 ## 6. DriverGuard
 
@@ -129,13 +189,14 @@ insufficient, return `Estimate.unavailable()` — never a fabricated number.
 | Thread                | Owns                                             | Must never                          |
 |-----------------------|--------------------------------------------------|-------------------------------------|
 | UI (main)             | Views, alert rendering/audio triggers            | run inference, block on network     |
-| Camera executor(s)    | ImageProxy → `Frame`, `LatestFrameQueue.offer`   | do heavy work; block                |
-| Inference thread      | `RoadDetector`, `DriverDetector`, tracker        | touch views                         |
+| Camera analysis executor (`zs-camera-analysis`, 1 thread) | ImageProxy → `Frame` (pool copy), `FramePipeline.onFrame` → `LatestFrameQueue.offer`, close ImageProxy | do heavy work; block; hold ImageProxy |
+| Processing executor (`zs-processing`, 1 thread, owned by `FramePipeline`) | `FrameProcessor` (Stage 1 diagnostic; Stage 2 `RoadDetector`, tracker) | touch views |
 | Risk thread (or inline after inference, bounded) | `RiskEngine`, `DrowsinessAnalyzer` | block on I/O          |
 | Network thread        | `ZholNetApi`, `ZholNetWebSocket`, offline queue  | influence the alert path            |
 
 Backpressure: `LatestFrameQueue` keeps one pending frame; older frames are dropped and counted.
-No unbounded buffers anywhere in the pipeline.
+No unbounded buffers anywhere in the pipeline. No thread is created per frame; the DEMO source
+uses one thread of its own (`zs-demo-source`). Executors are terminated on `stop()`.
 
 ## 10. Failure behaviour (fail safe, fail transparent)
 

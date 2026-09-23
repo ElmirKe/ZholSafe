@@ -67,12 +67,15 @@ Details: `docs/ARCHITECTURE.md`.
 cd zholnet-server && mvn test && mvn package
 java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8080/api/v1/health
 
-# Core Java module (JDK 17+ ; Gradle wrapper will be committed in Stage 1)
+# Core Java module (JDK 17+). Gradle wrapper NOT yet committed: the authoring sandbox cannot
+# reach services.gradle.org and wrapper binaries are never fabricated.
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app: open android-app/ in Android Studio (SDK 34). Assembling the APK was NOT
-# EXECUTED in Stage 0 (no Android SDK in the build environment).
+# Android app (Stage 1: CameraX road-camera pipeline + telemetry overlay).
+# Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
+# in the authoring environment (no Android SDK / Google Maven access); app sources were
+# compiled against API-shaped stubs only. See docs/DEVELOPMENT.md for the on-device test plan.
 
 # AI utilities
 cd ai-training && pip install -r requirements.txt && pytest
@@ -83,7 +86,7 @@ python3 scripts/check_contracts.py
 
 ## Development stages
 
-0 Foundation (this) → 1 Android + CameraX → 2 RoadGuard (ONNX) → 3 DriverGuard →
+0 Foundation ✔ → 0.1 Contract hardening ✔ → 1 Android + CameraX frame pipeline ✔ (code; device run pending) → 2 RoadGuard (ONNX) → 3 DriverGuard →
 4 Tracking/trajectory/Risk Engine → 5 ZholNet server + PostGIS → 6 Integration + WebSocket +
 map → 7 Testing, profiling, optimisation, audit. See `docs/ROADMAP.md`.
 
