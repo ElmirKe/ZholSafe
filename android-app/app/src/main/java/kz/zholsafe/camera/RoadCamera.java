@@ -54,6 +54,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * conversion throws, when the buffer pool is exhausted, and when the camera is already stopping.
  * The proxy is never stored or passed to core.
  *
+ * <h2>Timestamps</h2>
+ * {@link Frame#timestampNanos()} is {@code ImageInfo.getTimestamp()} — the camera image timestamp
+ * in nanoseconds. Its clock domain is device-dependent (typically {@code CLOCK_BOOTTIME} or
+ * {@code CLOCK_MONOTONIC}, see Camera2 {@code SENSOR_INFO_TIMESTAMP_SOURCE}); it is therefore
+ * only guaranteed comparable with other frames from the same camera source. It is never mixed
+ * with {@code System.nanoTime()}, which the pipeline uses solely for processing-duration / FPS
+ * telemetry. Wall-clock time is not used for frames at all.
+ *
  * <h2>Rotation</h2>
  * {@code ImageInfo.getRotationDegrees()} is copied into {@link Frame#rotationDegrees()}. It is the
  * clockwise rotation needed to make the buffer upright given the current display rotation
@@ -162,7 +170,11 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
             if (!running.get() || l == null) {
                 return; // closed in finally
             }
-            long ts = System.nanoTime(); // monotonic domain shared with the rest of the pipeline
+            // Camera image timestamp (ImageInfo.getTimestamp(), nanoseconds, from the camera HAL /
+            // Camera2 SENSOR_TIMESTAMP). This is the capture time, NOT the callback time, and is what
+            // Stage 4 tracking/TTC will difference between consecutive frames of this source.
+            // Processing-duration and FPS telemetry use System.nanoTime() separately (FramePipeline).
+            long ts = image.getImageInfo().getTimestamp();
             Frame frame = adapter.convert(image, ts);
             if (frame != null) {
                 l.onFrame(frame);

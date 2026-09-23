@@ -141,12 +141,23 @@ per frame is one small `Frame` record.
 while the analyzer is busy; `LatestFrameQueue` keeps only the latest `Frame` while the processor
 is busy (counted as `droppedOrReplacedFrames`). Nothing anywhere can grow with load.
 
+**Timestamps (two clock domains, never mixed).** `Frame.timestampNanos` is the *source/image*
+timestamp — for `RoadCamera` it is CameraX `ImageInfo.getTimestamp()` (camera capture time,
+device clock domain per Camera2 `SENSOR_INFO_TIMESTAMP_SOURCE`); for `SyntheticFrameSource` it is
+the source's injected clock. It is not wall-clock and not arrival time. Tracking / trajectory /
+TTC (Stage 4) must use differences between consecutive frames of the same `CameraSource` only.
+Processing duration and FPS in `PipelineTelemetry` use the pipeline's local `System.nanoTime()`
+clock; the pipeline never subtracts a frame timestamp from its local clock.
+
 **Rotation.** `Frame.rotationDegrees` = CameraX `ImageInfo.getRotationDegrees()` (clockwise
 rotation that makes the stored buffer upright for the current display orientation; derived from
 sensor orientation and display rotation). Pixels are **not** rotated in Stage 1 — that would be a
 full copy per frame. Stage 2 must apply it during tensor preprocessing (rotate-while-resize is
 free) and either map boxes back into stored coordinates or document that detections are in
 upright coordinates. `Frame.uprightWidth()/uprightHeight()` are provided for that purpose.
+
+**Process lifetime.** The pipeline runs only while `MainActivity` is started; there is no
+foreground service and no background operation in Stage 1 (permissions for it are not declared).
 
 **CameraX lifecycle.** `start()`/`stop()` run on the main thread. Use cases are bound to the
 Activity's `LifecycleOwner`; `onStop()` → `PipelineController.stop()` → `FramePipeline.stop()`

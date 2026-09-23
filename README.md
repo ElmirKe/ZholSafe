@@ -72,7 +72,7 @@ java -jar target/zholnet-server-0.0.1-SNAPSHOT.jar      # GET http://localhost:8
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (Stage 1: CameraX road-camera pipeline + telemetry overlay).
+# Android app (Stage 1/1.1: CameraX road-camera pipeline + telemetry overlay; no background/foreground service).
 # Open android-app/ in Android Studio (SDK 34) → run `app`. Assembling the APK was NOT EXECUTED
 # in the authoring environment (no Android SDK / Google Maven access); app sources were
 # compiled against API-shaped stubs only. See docs/DEVELOPMENT.md for the on-device test plan.

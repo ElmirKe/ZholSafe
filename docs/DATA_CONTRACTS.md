@@ -215,3 +215,14 @@ build an upright model input without Stage 1 paying a per-frame pixel rotation. 
 remain the *stored* buffer dimensions; use `uprightWidth()/uprightHeight()` for the display
 orientation. `Frame` is never serialised and is not part of the ZholNet v1 contract; the only
 existing constructor call site (a core test) was updated.
+
+### Stage 1.1 — `Frame.timestampNanos` semantics
+
+`timestampNanos` is the **source/image timestamp**: `ImageProxy.getImageInfo().getTimestamp()`
+for the LIVE road camera, the source's own monotonic clock for DEMO/TEST. Rules:
+
+- It is not wall-clock time and not pipeline arrival time.
+- Clock domain is per source; only differences between consecutive frames of the same
+  `CameraSource` are meaningful (future tracking/TTC input).
+- Processing-duration / FPS telemetry uses the pipeline's local monotonic clock. Never subtract
+  values from the two domains unless their compatibility is proven for the device.

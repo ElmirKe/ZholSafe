@@ -6,6 +6,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * Lightweight, allocation-free runtime telemetry for the frame pipeline. Pure Java, no metrics
  * framework. Writers are the camera/processing threads; readers (UI) poll {@link #snapshot()}.
  *
+ * <p>{@code latestFrameTimestampNanos} is the source/image timestamp of the last received frame
+ * (opaque, source clock domain). FPS and processing durations are computed from the pipeline's
+ * local monotonic clock ({@code nowNanos} arguments) — the two are never mixed.
+ *
  * <p>FPS is a rolling estimate over a fixed window of recent timestamps (exponential moving
  * average of inter-frame intervals) — reported as an estimate, not a measurement claim.
  */

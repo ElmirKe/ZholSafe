@@ -25,6 +25,11 @@ import java.util.function.LongSupplier;
  * </ul>
  * No per-frame threads, no unbounded queues: capacity is exactly one pending frame.
  *
+ * <h2>Clock domains</h2>
+ * The injected {@code clock} (default {@code System.nanoTime}) is used ONLY for processing
+ * duration and FPS telemetry. {@link Frame#timestampNanos()} (source/image time) is passed
+ * through to telemetry as an opaque value and is never subtracted from the local clock.
+ *
  * <h2>Failure handling</h2>
  * Processor exceptions are counted and logged (rate-limited) and the pipeline continues in
  * {@link PipelineState#DEGRADED} until a frame succeeds again. Source errors move the pipeline to

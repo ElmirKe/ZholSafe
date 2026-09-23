@@ -9,9 +9,9 @@
     <!-- Network: ZholNet only. Local warnings do NOT depend on it. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Keep the pipeline alive while driving (Stage 1). -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <!-- FOREGROUND_SERVICE / FOREGROUND_SERVICE_CAMERA are intentionally NOT declared: no
+         foreground service exists yet. The Stage 1 pipeline runs only while MainActivity is
+         started (onStart..onStop). Declare them together with the actual service (deferred 1.x). -->
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-feature android:name="android.hardware.camera.any" android:required="true" />

@@ -18,6 +18,15 @@ import java.util.Objects;
  * apply the rotation while building the model input tensor and must map detections back into
  * this frame's stored coordinate system (or document that boxes are in upright coordinates).
  *
+ * <h2>Timestamp semantics (Stage 1.1)</h2>
+ * {@code timestampNanos} is the <em>source/image</em> timestamp: for the LIVE road camera it is
+ * CameraX {@code ImageInfo.getTimestamp()} (camera capture time); for DEMO/TEST sources it is
+ * whatever monotonic clock that source uses. It is NOT wall-clock time and NOT the time the frame
+ * reached the pipeline. Timestamps are only comparable between consecutive frames of the same
+ * {@link CameraSource}; tracking/trajectory/TTC (Stage 4) must difference those and must never
+ * subtract a Frame timestamp from {@code System.nanoTime()} or from another source's timestamp.
+ * Processing-duration and FPS telemetry use the pipeline's own monotonic clock instead.
+ *
  * <h2>Buffer ownership</h2>
  * The buffer belongs to the producer and may be recycled after the consumer returns from
  * processing. Consumers MUST NOT retain {@code data} beyond the processing call; copy what you
@@ -29,7 +38,7 @@ import java.util.Objects;
  * @param format          pixel layout of {@code data}
  * @param data            pixel data (position 0, limit = frame size)
  * @param rotationDegrees 0, 90, 180 or 270 — see above
- * @param timestampNanos  monotonic capture timestamp (System.nanoTime domain)
+ * @param timestampNanos  source/image capture timestamp in ns (see "Timestamp semantics"); same-source comparisons only
  * @param source          which camera produced the frame
  */
 public record Frame(
