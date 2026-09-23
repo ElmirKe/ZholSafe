@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Camera: road-facing (rear) analysis in Stage 1; driver-facing is a later stage. -->
+    <!-- Camera: road-facing (rear) analysis and driver-facing (front) DriverGuard. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Alerts: vibration accompanies the siren (works with sound muted). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Location: GPS hazard events (Stage 6). Local warnings do NOT depend on it. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -21,6 +23,7 @@
         android:name=".app.ZholSafeApplication"
         android:allowBackup="false"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.ZholSafe">
 
@@ -34,5 +37,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Persists the in-app language (RU/KK/EN) on Android 12 and older (AppCompat). -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
     </application>
 </manifest>

@@ -1,66 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black">
+    android:background="@color/zs_bg"
+    android:keepScreenOn="true">
 
-    <!-- LIVE: CameraX preview (rear camera). Hidden in DEMO. -->
+    <!-- Main view: road camera (or driver camera when only the driver is watched). Sizes and
+         which preview is "main" vs picture-in-picture are set from code. -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:implementationMode="performance"
-        app:scaleType="fitCenter"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:implementationMode="compatible"
+        app:scaleType="fitCenter" />
 
-    <!-- Stage 2: detection boxes in upright-image coordinates mapped with fitCenter letterbox. -->
+    <!-- Detection boxes in upright-image coordinates mapped with fitCenter letterbox. -->
     <kz.zholsafe.ui.DetectionOverlayView
         android:id="@+id/detectionOverlay"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="@id/previewView"
-        app:layout_constraintEnd_toEndOf="@id/previewView"
-        app:layout_constraintStart_toStartOf="@id/previewView"
-        app:layout_constraintTop_toTopOf="@id/previewView" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-    <!-- Engineering telemetry overlay (Stage 1 + Stage 2 detector lines). -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/driverPreview"
+        android:layout_width="160dp"
+        android:layout_height="120dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        app:implementationMode="compatible"
+        app:scaleType="fillCenter" />
+
+    <!-- Green / yellow / red / grey frame: readable with peripheral vision. -->
+    <View
+        android:id="@+id/statusFrame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_frame" />
+
+    <!-- Status card: one headline + one detail line. -->
+    <LinearLayout
+        android:id="@+id/statusCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="12dp">
+
+        <View
+            android:id="@+id/statusDot"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:background="@drawable/bg_dot" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/statusTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/status_placeholder"
+                android:textColor="@color/zs_text"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/statusDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="420dp"
+                android:textColor="@color/zs_muted"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Engineering telemetry (hidden by default). -->
     <TextView
         android:id="@+id/telemetryText"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
         android:background="#99000000"
         android:fontFamily="monospace"
+        android:maxWidth="460dp"
         android:padding="8dp"
-        android:text="@string/status_placeholder"
         android:textColor="@android:color/white"
-        android:textSize="13sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textSize="11sp"
+        android:visibility="gone" />
 
-    <Button
-        android:id="@+id/modeButton"
-        android:layout_width="wrap_content"
+    <!-- Bottom controls. -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        android:text="@string/action_switch_to_live"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_gravity="bottom"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
 
-    <Button
-        android:id="@+id/retryButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        android:text="@string/action_retry_camera"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <Button
+            android:id="@+id/camerasButton"
+            style="@style/ZsButton"
+            android:text="@string/action_cameras_driver" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <Button
+            android:id="@+id/muteButton"
+            style="@style/ZsButton"
+            android:text="@string/action_mute" />
+
+        <Button
+            android:id="@+id/retryButton"
+            style="@style/ZsButton"
+            android:text="@string/action_retry_camera"
+            android:visibility="gone" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/languageButton"
+            style="@style/ZsButton"
+            android:text="@string/action_language" />
+
+        <Button
+            android:id="@+id/modeButton"
+            style="@style/ZsButton"
+            android:text="@string/action_switch_to_demo"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/telemetryButton"
+            style="@style/ZsButton"
+            android:text="@string/action_telemetry" />
+    </LinearLayout>
+
+    <!-- Full-screen alarm: shown only while the alarm lasts (cannot be dismissed early). -->
+    <LinearLayout
+        android:id="@+id/alarmOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/zs_alarm_bg"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/alarmTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="64sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/alarmDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="22sp" />
+    </LinearLayout>
+</FrameLayout>

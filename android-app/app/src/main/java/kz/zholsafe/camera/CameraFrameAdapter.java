@@ -14,7 +14,7 @@ import java.util.ArrayDeque;
  * <h2>Ownership rules (Stage 1)</h2>
  * <ul>
  *   <li>The {@link ImageProxy} never leaves this class. Only its pixel bytes, dimensions, rotation
- *       and timestamp are copied out. The caller ({@link RoadCamera}) closes the proxy in a
+ *       and timestamp are copied out. The caller ({@link LiveCamera}) closes the proxy in a
  *       {@code finally} block on every path.</li>
  *   <li>Output buffers come from a fixed pool of {@value #POOL_SIZE} direct buffers sized for the
  *       current resolution — one being filled, one pending in the queue, one being processed.
@@ -29,10 +29,15 @@ final class CameraFrameAdapter implements FrameBufferRecycler {
 
     static final int POOL_SIZE = 3;
 
+    private final Frame.CameraSource source;
     private final ArrayDeque<ByteBuffer> pool = new ArrayDeque<>(POOL_SIZE);
     private int pooledWidth = -1;
     private int pooledHeight = -1;
     private long skippedNoBuffer;
+
+    CameraFrameAdapter(Frame.CameraSource source) {
+        this.source = source;
+    }
 
     /**
      * @return a Frame backed by a pooled buffer, or {@code null} if the pool is exhausted or the
@@ -57,13 +62,13 @@ final class CameraFrameAdapter implements FrameBufferRecycler {
         }
         out.clear();
         return new Frame(w, h, Frame.PixelFormat.NV21, out, image.getImageInfo().getRotationDegrees(),
-                timestampNanos, Frame.CameraSource.ROAD);
+                timestampNanos, source);
     }
 
     /** Called from the processing thread (after process) and the analysis thread (on displacement). */
     @Override
     public void recycle(Frame frame) {
-        if (frame.source() == Frame.CameraSource.ROAD) {
+        if (frame.source() == source) {
             recycleBuffer(frame.data());
         }
     }

@@ -18,8 +18,9 @@ public class ZholSafeApplication extends Application {
     public void onCreate() {
         super.onCreate();
         ZLog.install(new LogcatSink());
-        // Default to DEMO until a real model + camera path is verified in Stage 1/2.
-        config = ZholSafeConfig.defaults(ZholSafeConfig.OperatingMode.DEMO);
+        // LIVE by default: the driver screen is the product. DEMO (synthetic road frames) stays
+        // reachable from the engineering view.
+        config = ZholSafeConfig.defaults(ZholSafeConfig.OperatingMode.LIVE);
         ZLog.i("App", "ZholSafe started in mode " + config.mode());
     }
 

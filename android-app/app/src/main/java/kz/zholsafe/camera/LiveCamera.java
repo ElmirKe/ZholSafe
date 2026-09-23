@@ -7,6 +7,7 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
@@ -32,7 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * LIVE road-facing (rear) camera as a core {@link FrameSource}, implemented with CameraX.
+ * LIVE camera as a core {@link FrameSource}, implemented with CameraX: the road-facing rear
+ * camera ({@link Lens#ROAD}) or the driver-facing front camera ({@link Lens#DRIVER}).
  *
  * <h2>Lifecycle</h2>
  * {@link #start} and {@link #stop} must be called on the main thread. Use cases are bound to the
@@ -68,26 +70,49 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * (the Activity is locked to landscape, so on most phones this is 0 or 180 for the rear camera,
  * and 90/270 if the device is held in portrait). Pixels are NOT rotated here.
  */
-public final class RoadCamera implements FrameSource, FrameBufferRecycler {
+public final class LiveCamera implements FrameSource, FrameBufferRecycler {
 
-    private static final String TAG = "RoadCamera";
-    /** Analysis target: enough for detection, cheap to copy. Falls back to nearest supported. */
-    private static final Size TARGET_ANALYSIS_SIZE = new Size(1280, 720);
+    /** Which physical camera feeds this source. */
+    public enum Lens {
+        /** Rear camera looking at the road. Analysis target: enough for detection, cheap to copy. */
+        ROAD(CameraSelector.DEFAULT_BACK_CAMERA, new Size(1280, 720), Frame.CameraSource.ROAD),
+        /** Front camera looking at the driver. Face landmarks need far fewer pixels. */
+        DRIVER(CameraSelector.DEFAULT_FRONT_CAMERA, new Size(640, 480), Frame.CameraSource.DRIVER);
+
+        final CameraSelector selector;
+        final Size targetSize;
+        final Frame.CameraSource source;
+
+        Lens(CameraSelector selector, Size targetSize, Frame.CameraSource source) {
+            this.selector = selector;
+            this.targetSize = targetSize;
+            this.source = source;
+        }
+    }
+
     private static final long ERROR_LOG_EVERY = 60;
+
+    private final String TAG;
+    private final Lens lens;
 
     private final Context appContext;
     private final LifecycleOwner lifecycleOwner;
     @Nullable private final PreviewView previewView;
-    private final CameraFrameAdapter adapter = new CameraFrameAdapter();
+    private final CameraFrameAdapter adapter;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile Listener listener;
     private ExecutorService analysisExecutor;
     private ProcessCameraProvider provider;
     private ImageAnalysis analysis;
+    @Nullable private Preview preview;
     private long analyzerErrors;
 
-    public RoadCamera(@NonNull Context context, @NonNull LifecycleOwner lifecycleOwner, @Nullable PreviewView previewView) {
+    public LiveCamera(@NonNull Context context, @NonNull LifecycleOwner lifecycleOwner,
+                      @Nullable PreviewView previewView, @NonNull Lens lens) {
+        this.lens = lens;
+        this.TAG = "LiveCamera-" + lens;
+        this.adapter = new CameraFrameAdapter(lens.source);
         this.appContext = context.getApplicationContext();
         this.lifecycleOwner = lifecycleOwner;
         this.previewView = previewView;
@@ -101,7 +126,7 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
         }
         this.listener = l;
         analysisExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "zs-camera-analysis");
+            Thread t = new Thread(r, "zs-camera-analysis-" + lens);
             t.setDaemon(true);
             return t;
         });
@@ -124,19 +149,19 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
 
     @MainThread
     private void bind(ProcessCameraProvider p) {
-        CameraSelector rear = CameraSelector.DEFAULT_BACK_CAMERA;
-        boolean hasRear;
+        CameraSelector selector = lens.selector;
+        boolean hasCamera;
         try {
-            hasRear = p.hasCamera(rear);
-        } catch (RuntimeException e) {
-            hasRear = false;
+            hasCamera = p.hasCamera(selector);
+        } catch (CameraInfoUnavailableException | RuntimeException e) {
+            hasCamera = false;
         }
-        if (!hasRear) {
-            fail("no rear camera available", null);
+        if (!hasCamera) {
+            fail("no " + lens + " camera available", null);
             return;
         }
         ResolutionSelector resolution = new ResolutionSelector.Builder()
-                .setResolutionStrategy(new ResolutionStrategy(TARGET_ANALYSIS_SIZE,
+                .setResolutionStrategy(new ResolutionStrategy(lens.targetSize,
                         ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
                 .build();
         analysis = new ImageAnalysis.Builder()
@@ -146,18 +171,18 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
                 .build();
         analysis.setAnalyzer(analysisExecutor, this::analyze);
 
-        p.unbindAll();
+        // Unbind only this source's own use cases: another LiveCamera (the other lens) may be bound.
         try {
             Camera camera;
             if (previewView != null) {
-                Preview preview = new Preview.Builder().build();
+                preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
-                camera = p.bindToLifecycle(lifecycleOwner, rear, preview, analysis);
+                camera = p.bindToLifecycle(lifecycleOwner, selector, preview, analysis);
             } else {
-                camera = p.bindToLifecycle(lifecycleOwner, rear, analysis);
+                camera = p.bindToLifecycle(lifecycleOwner, selector, analysis);
             }
             int sensor = camera.getCameraInfo().getSensorRotationDegrees();
-            ZLog.i(TAG, "bound rear camera; sensorRotation=" + sensor + " target=" + TARGET_ANALYSIS_SIZE);
+            ZLog.i(TAG, "bound " + lens + " camera; sensorRotation=" + sensor + " target=" + lens.targetSize);
         } catch (IllegalArgumentException | IllegalStateException e) {
             fail("camera bind failed: " + e.getMessage(), e);
         }
@@ -204,12 +229,18 @@ public final class RoadCamera implements FrameSource, FrameBufferRecycler {
                 analysis.clearAnalyzer();
             }
             if (provider != null) {
-                provider.unbindAll();
+                if (analysis != null) {
+                    provider.unbind(analysis);
+                }
+                if (preview != null) {
+                    provider.unbind(preview);
+                }
             }
         } catch (RuntimeException e) {
             ZLog.w(TAG, "unbind failed: " + e);
         } finally {
             analysis = null;
+            preview = null;
             provider = null;
         }
         ExecutorService ex = analysisExecutor;

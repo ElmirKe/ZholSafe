@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zs_bg">#070D18</color>
+    <color name="zs_surface">#E60D1626</color>
+    <color name="zs_line">#1D2C45</color>
+    <color name="zs_text">#EAF2FF</color>
+    <color name="zs_muted">#7F8FAA</color>
+    <color name="zs_accent">#22D3EE</color>
+    <color name="zs_ok">#2EE59D</color>
+    <color name="zs_caution">#FFB020</color>
+    <color name="zs_danger">#FF3B5C</color>
+    <color name="zs_unknown">#7F8FAA</color>
+    <color name="zs_alarm_bg">#E6D61434</color>
+</resources>
