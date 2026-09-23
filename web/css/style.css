@@ -204,6 +204,7 @@ h1 { font-size: clamp(30px, 8vw, 44px); line-height: 1.08; font-weight: 800; mar
   box-shadow: 0 10px 30px rgba(255, 59, 92, .45);
 }
 .banner svg { width: 30px; height: 30px; flex: none; }
+.banner[data-kind="person"] { background: #7C3AED; box-shadow: 0 10px 30px rgba(124, 58, 237, .45); }
 
 .hud-bottom {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;

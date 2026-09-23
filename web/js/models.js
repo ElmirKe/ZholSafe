@@ -1,3 +1,4 @@
+import { DETECT_CLASSES } from './road.js';
 import {
   FilesetResolver,
   FaceLandmarker,
@@ -40,5 +41,5 @@ export const loadDetector = () =>
     runningMode: 'VIDEO',
     scoreThreshold: 0.3,
     maxResults: 10,
-    categoryAllowlist: ['horse', 'cow', 'sheep', 'dog', 'bear', 'elephant', 'person'],
+    categoryAllowlist: DETECT_CLASSES,
   });

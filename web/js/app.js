@@ -1,6 +1,6 @@
 import { loadFace, loadDetector } from './models.js';
 import { FatigueMonitor, drawEyes } from './fatigue.js';
-import { RoadMonitor, drawHazards, LIVESTOCK } from './road.js';
+import { RoadMonitor, drawHazards } from './road.js';
 import { openDriverCamera, openRoadCamera, stopStream } from './cameras.js';
 import { settings, bindSettings } from './settings.js';
 import { FatigueIndex, FACTOR_LABELS } from './fatigue-index.js';
@@ -422,6 +422,12 @@ function renderDriver(r, now) {
   trip.sleeping = sleeping;
 }
 
+const SAY = {
+  livestock: 'Внимание! Скот на дороге. Сбавьте скорость.',
+  person: 'Внимание! Человек на дороге. Сбавьте скорость.',
+};
+const describe = (h) => (h.kind === 'livestock' ? `${h.species}, ≈${h.distance} м` : `≈${h.distance} м`);
+
 function renderRoad(hazards, now) {
   drawHazards(els.roadCanvas, els.roadVideo, hazards, settings.warnDistance);
 
@@ -435,14 +441,17 @@ function renderRoad(hazards, now) {
   const shown = alerting ? trip.near : nearest;
 
   if (alerting) {
-    const text = `${shown.label} на дороге · ≈${shown.distance} м`;
+    const text = `${shown.label} на дороге · ${describe(shown)}`;
     els.banner.hidden = false;
+    els.banner.dataset.kind = shown.kind;
     els.bannerText.textContent = text;
     setPill(els.pillRoad, 'danger', `${shown.label} · ≈${shown.distance} м`);
-    if (!trip.roadAlert) {
+    // Новая тревога — или тип опасности сменился (был скот, появился человек).
+    if (!trip.roadAlert || trip.alertKind !== shown.kind) {
       trip.hazards++;
+      trip.alertKind = shown.kind;
       logEvent('danger', text);
-      alarm.say(`Внимание! ${shown.label} на дороге. Сбавьте скорость.`, settings);
+      alarm.say(SAY[shown.kind], settings);
       autoReport(shown, now);
     }
     if (now - trip.lastRoadBeep >= 1500) {
@@ -452,19 +461,20 @@ function renderRoad(hazards, now) {
   } else {
     els.banner.hidden = true;
     setPill(els.pillRoad, nearest ? 'warn' : 'ok', nearest ? `${nearest.label} · ≈${nearest.distance} м` : 'Дорога чистая');
+    trip.alertKind = null;
   }
   trip.roadAlert = alerting;
   trip.roadLevel = alerting ? 'danger' : nearest ? 'warn' : 'ok';
 
   const level = trip.roadLevel;
-  els.sideRoad.textContent = shown ? `${shown.label}` : 'Дорога чистая';
+  els.sideRoad.textContent = shown ? (shown.kind === 'livestock' ? `Скот: ${shown.species}` : 'Человек') : 'Дорога чистая';
   setTag(els.sideRoadTag, level, level === 'danger' ? 'ОПАСНО' : level === 'warn' ? 'ВИЖУ' : 'ЧИСТО');
   els.sideDist.textContent = shown ? `≈${shown.distance} м` : '—';
   els.sideScore.textContent = shown ? `${Math.round(shown.score * 100)}%` : '—';
 }
 
 function autoReport(hazard, now) {
-  if (!settings.autoReport || !LIVESTOCK.has(hazard.key) || !trip.pos || now - trip.lastReportAt < 60000) return;
+  if (!settings.autoReport || hazard.kind !== 'livestock' || !trip.pos || now - trip.lastReportAt < 60000) return;
   trip.lastReportAt = now;
   geo.addReport({ ...trip.pos, type: hazard.key, source: 'auto' });
   logEvent('info', 'Скот отмечен на карте');

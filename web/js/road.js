@@ -1,18 +1,19 @@
 import { prepCanvas } from './util.js';
 
-export const LABELS = {
-  horse: 'Лошадь',
-  cow: 'Корова',
-  sheep: 'Овца',
-  dog: 'Собака',
-  bear: 'Животное',
-  elephant: 'Животное',
-  person: 'Человек',
+// Что ищем на дороге: вид → тип опасности.
+const SPECIES = {
+  horse: { kind: 'livestock', name: 'лошадь', height: 1.6 },
+  cow: { kind: 'livestock', name: 'корова', height: 1.4 },
+  sheep: { kind: 'livestock', name: 'овца', height: 0.8 },
+  person: { kind: 'person', name: 'человек', height: 1.7 },
 };
-export const LIVESTOCK = new Set(['horse', 'cow', 'sheep']);
+export const DETECT_CLASSES = Object.keys(SPECIES);
 
-// Средняя высота объекта в метрах — для грубой оценки дистанции по размеру рамки.
-const HEIGHT_M = { horse: 1.6, cow: 1.4, sheep: 0.8, dog: 0.6, bear: 1.2, elephant: 2.5, person: 1.7 };
+export const KINDS = {
+  livestock: { label: 'Скот', color: '#FFB020' },
+  person: { label: 'Человек', color: '#A78BFA' },
+};
+const NEAR_COLOR = '#FF3B5C';
 
 export class RoadMonitor {
   constructor(detector) {
@@ -30,11 +31,21 @@ export class RoadMonitor {
       .detectForVideo(video, now)
       .detections.map((d) => {
         const { categoryName: key, score } = d.categories[0];
+        const species = SPECIES[key];
+        if (!species) return null;
         const box = d.boundingBox;
-        const meters = (HEIGHT_M[key] * focalPx) / Math.max(box.height, 1);
-        return { key, label: LABELS[key], score, box, distance: Math.max(5, Math.round(meters / 10) * 10) };
+        const meters = (species.height * focalPx) / Math.max(box.height, 1);
+        return {
+          key,
+          kind: species.kind,
+          label: KINDS[species.kind].label,
+          species: species.name,
+          score,
+          box,
+          distance: Math.max(5, Math.round(meters / 10) * 10),
+        };
       })
-      .filter((h) => h.label && h.score >= minScore)
+      .filter((h) => h && h.score >= minScore)
       .sort((a, b) => a.distance - b.distance);
   }
 }
@@ -44,7 +55,7 @@ export function drawHazards(canvas, video, hazards, warnDistance) {
   ctx.font = '600 13px Inter, sans-serif';
   ctx.textBaseline = 'top';
   for (const h of hazards) {
-    const color = h.distance <= warnDistance ? '#FF3B5C' : '#FFB020';
+    const color = h.distance <= warnDistance ? NEAR_COLOR : KINDS[h.kind].color;
     const x = ox + h.box.originX * s;
     const y = oy + h.box.originY * s;
     const w = h.box.width * s;
@@ -53,7 +64,8 @@ export function drawHazards(canvas, video, hazards, warnDistance) {
     ctx.lineWidth = 3;
     ctx.strokeRect(x, y, w, bh);
 
-    const text = `${h.label} · ≈${h.distance} м · ${Math.round(h.score * 100)}%`;
+    const what = h.kind === 'livestock' ? `Скот: ${h.species}` : 'Человек';
+    const text = `${what} · ≈${h.distance} м · ${Math.round(h.score * 100)}%`;
     const tw = ctx.measureText(text).width + 12;
     const ty = y > 24 ? y - 24 : y + bh + 2;
     ctx.fillStyle = color;
