@@ -2,7 +2,12 @@ package kz.zholsafe.risk;
 
 import kz.zholsafe.config.RiskConfig;
 import kz.zholsafe.driver.DriverState;
+import kz.zholsafe.driver.EyeState;
 import kz.zholsafe.driver.HeadPose;
+import kz.zholsafe.driver.HeadPoseState;
+import kz.zholsafe.driver.ObservationQuality;
+import kz.zholsafe.driver.PerclosValue;
+import kz.zholsafe.driver.YawnLikeState;
 import kz.zholsafe.model.BoundingBox;
 import kz.zholsafe.model.Estimate;
 import kz.zholsafe.model.EstimationMethod;
@@ -70,8 +75,7 @@ class RiskEngineContractTest {
                 MovementClass.APPROACHING_CORRIDOR,
                 Estimate.distance(12.0, EstimationMethod.MONOCULAR_UNCALIBRATED),
                 Estimate.ttc(1.8, EstimationMethod.MONOCULAR_UNCALIBRATED));
-        DriverState drowsy = new DriverState(true, true, 2000L, true, 0.4f, HeadPose.UNAVAILABLE,
-                false, 0.9f, 1L);
+        DriverState drowsy = drowsyDriver(2_000_000_000L, 0.4f);
         RiskAssessment a = engine.evaluate(input(List.of(horse), drowsy));
         assertEquals(RiskLevel.CRITICAL, a.level());
         assertTrue(a.reasons().containsAll(List.of(
@@ -83,8 +87,7 @@ class RiskEngineContractTest {
 
     @Test
     void drowsyDriverAloneRaisesDriverRiskWithReason() {
-        DriverState drowsy = new DriverState(true, true, 2500L, false, Float.NaN, HeadPose.UNAVAILABLE,
-                false, 0.9f, 1L);
+        DriverState drowsy = drowsyDriver(2_500_000_000L, Float.NaN);
         RiskAssessment a = engine.evaluate(input(List.of(), drowsy));
         assertTrue(a.driverRisk() > 0f);
         assertTrue(a.reasons().contains(RiskReason.DRIVER_PROLONGED_EYE_CLOSURE));
@@ -168,7 +171,20 @@ class RiskEngineContractTest {
     }
 
     private static DriverState alertDriver() {
-        return new DriverState(true, false, 0L, true, 0.05f, HeadPose.UNAVAILABLE, false, 0.95f, 1L);
+        return new DriverState(1L, true, EyeState.OPEN, 0L,
+                new PerclosValue(true, 0.05f, 30_000_000_000L, 60_000_000_000L),
+                HeadPoseState.FORWARD, 0L, HeadPose.of(0f, 0f, 0f), YawnLikeState.NONE, 0L, 0L, 0L,
+                ObservationQuality.GOOD, 0.95f, DriverState.TimestampRejection.NONE);
+    }
+
+    private static DriverState drowsyDriver(long closureNanos, float perclosValue) {
+        boolean perclosAvailable = !Float.isNaN(perclosValue);
+        return new DriverState(1L, true, EyeState.CLOSED, closureNanos,
+                perclosAvailable
+                        ? new PerclosValue(true, perclosValue, 30_000_000_000L, 60_000_000_000L)
+                        : PerclosValue.unavailable(0L, 0L),
+                HeadPoseState.UNKNOWN, 0L, HeadPose.UNAVAILABLE, YawnLikeState.UNAVAILABLE, 0L, 0L, 0L,
+                ObservationQuality.GOOD, 0.9f, DriverState.TimestampRejection.NONE);
     }
 
     private static BoundingBox box(float x1, float y1, float x2, float y2) {

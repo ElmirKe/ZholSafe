@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConfigValidationTest {
@@ -46,10 +47,52 @@ class ConfigValidationTest {
     }
 
     @Test
-    void driverGuardConfigRequiresPositiveWindows() {
-        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(0L, 60_000L, 0.3f, 10_000L, 0.5f));
-        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(1500L, -1L, 0.3f, 10_000L, 0.5f));
-        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(1500L, 60_000L, 1.3f, 10_000L, 0.5f));
+    void driverGuardConfigValidatesStage43Thresholds() {
+        DriverGuardConfig d = DriverGuardConfig.defaults();
+        // eye-closed must be strictly below partially-closed
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.70f, 0.60f, 0.5f, 0.7d, 1.5d, 3.0d, 60d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // closure thresholds must be strictly ordered caution < warning < critical
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 0.5f, 1.5d, 1.5d, 3.0d, 60d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // PERCLOS window must be positive
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 0.5f, 0.7d, 1.5d, 3.0d, -1d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // confidence must be a unit value
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 1.2f, 0.7d, 1.5d, 3.0d, 60d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // PERCLOS caution must not exceed warning
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 0.5f, 0.7d, 1.5d, 3.0d, 60d, 0.5f, 0.45f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // NaN durations rejected
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 0.5f, 0.7d, Double.NaN, 3.0d, 60d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 4096));
+        // bounded-memory hard cap must allow at least a pair of observations
+        assertThrows(IllegalArgumentException.class, () -> new DriverGuardConfig(
+                0.30f, 0.60f, 0.5f, 0.7d, 1.5d, 3.0d, 60d, 0.5f, 0.15f, 0.30f, 0.6f, 2.0d,
+                30f, 25f, 2.0d, 5.0d, 5.0d, 1.0d, 1));
+        assertDoesNotThrow(DriverGuardConfig::defaults);
+    }
+
+    @Test
+    void driverGuardLegacyShimsStayConsistent() {
+        DriverGuardConfig d = DriverGuardConfig.defaults();
+        assertEquals(1500L, d.prolongedEyeClosureMillis(), "1.5 s warning threshold in ms");
+        assertEquals(0.30f, d.perclosWarningFraction(), 1e-6f);
+    }
+
+    @Test
+    void combinedRiskConfigRequiresPositiveBudgets() {
+        assertThrows(IllegalArgumentException.class, () -> new CombinedRiskConfig(0d, 2d, 1d));
+        assertThrows(IllegalArgumentException.class, () -> new CombinedRiskConfig(2d, -1d, 1d));
+        assertThrows(IllegalArgumentException.class, () -> new CombinedRiskConfig(2d, 2d, Double.NaN));
+        assertDoesNotThrow(CombinedRiskConfig::defaults);
     }
 
     @Test

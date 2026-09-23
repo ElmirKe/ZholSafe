@@ -141,6 +141,31 @@ unless it is actually run. No live risk accuracy, warnings, calibrated probabili
 behaviour are claimed. Before production, separately validate camera intrinsics/pose, real road
 corridor/grades, ground-truth range and closing, cue reliability, false warnings and driver UX.
 
+## Stage 4.3 DriverGuard + combined risk verification
+
+`docs/STAGE4_3_DRIVERGUARD.md` describes the observation port, source-time closure timing,
+time-weighted coverage-aware PERCLOS, yawn-like/head-pose persistence, missing-face semantics,
+the driver-only risk policy, the fusion rule matrix, freshness and degraded modes, the demo
+sequence and known limitations. New JVM tests: `TemporalDriverStateAnalyzerEyeTest`,
+`PerclosTest`, `YawnHeadPoseTest`, `FaceVisibilityTest`, `DriverGuardContractTest`
+(`kz.zholsafe.driver`), `DriverRiskEngineTest`, `CombinedRiskEngineTest`,
+`CombinedRiskFreshnessTest`, `CombinedRiskDemoSequenceTest` (`kz.zholsafe.risk`),
+`DriverGuardProcessorTest` (`kz.zholsafe.pipeline`); plus compatibility-updated
+`DriverStateInvariantsTest`, `RiskEngineContractTest`, `ConfigValidationTest`.
+Run with `cd android-app && gradle :core:test` **when Gradle/JUnit are available**.
+
+Stage 4.3 sandbox results: **Java compilation/tests NOT EXECUTED — the authoring sandbox has no
+JDK/JRE, no install permission and no network; all Java sources pass a tree-sitter syntax-only
+parse (grammar check, NOT javac).** No build/test result is claimed beyond that. Road-pipeline
+files (Stage 4.2 and earlier inference) were NOT modified; Stage 2.5 real-model smoke NOT
+REPEATED (inference code unchanged). **ANDROID BUILD: NOT EXECUTED**; **REAL DRIVER CAMERA: NOT
+VERIFIED**; **LANDMARK BACKEND (MediaPipe): NOT VERIFIED**. DriverGuard thresholds are
+EXPERIMENTAL demo values — say so in any UI that exposes them; DriverGuard is not a medical
+diagnostic or clinically validated microsleep detector.
+
+The **jvm-fallback** path remains `scripts/jvm-fallback-build.sh` (ECJ + JUnit console launcher)
+when `ZS_JAVA`/`ZS_ECJ`/`ZS_JUNIT` point at genuine artifacts — no fabricated toolchain.
+
 Stage 4.2 sandbox results: temporary JDK 17 `javac` + JUnit-compatible reflection **shim**
 (**NOT official Gradle/JUnit**): **218 core test methods, 0 failures** (Stage 0–4.2), plus
 **5 synthetic image-frame smoke methods, 0 failures** (NOT the 31-image model inference suite).

@@ -15,7 +15,7 @@ Changes to this document require an explicit, justified proposal (see `DEVELOPME
  │                        │           ObjectTracker               │   │   ├ nearby queries        │
  │                        │                 │ Trajectory/TTC      │   │   ├ WebSocket notify      │
  │                        ▼                 ▼                     │   │   └ risk map / analytics  │
- │                DriverDetector ──► DrowsinessAnalyzer           │   │        │                  │
+ │                DriverObservationProvider ─► DriverStateAnalyzer           │   │        │                  │
  │                                          │                     │   │   PostgreSQL + PostGIS    │
  │                                          ▼                     │   └───────────▲───────────────┘
  │                     RiskEngine (pure Java, explainable)        │               │ HTTPS REST (events)
@@ -76,9 +76,9 @@ Package root: `kz.zholsafe`
 | `tracking`     | core   | `ObjectTracker`, `TrackedObject`, `MovementClass`                              | 0 (impl: 3) |
 | `trajectory`   | core   | Stage 4.0 `TrajectoryEstimator`; legacy `DistanceEstimator`/`TtcEstimator` remain unavailable | 0 / 4.0 |
 | `physical`     | core   | Experimental calibration, ground/size depth, metric range regression, separate TTC contracts/processor | 4.1 |
-| `driver`       | core   | `DriverObservation`, `DriverState`, `HeadPose`, `DrowsinessAnalyzer`           | 0 (impl: deferred 4.3) |
-| `risk`         | core   | Legacy `RiskEngine`/`RiskInput`/`BaselineRiskEngine` retained; Stage 4.2 `RoadRiskEvaluator`/`RoadRiskEngine`, `RoadRiskSnapshot`, `RiskLevel`/`RiskReason` | 0 / 4.2 |
-| `config`       | core   | `ZholSafeConfig` root + `DetectorConfig`, `TrackingConfig`, `RiskConfig`, `DriverGuardConfig`, `NetworkConfig` | 0 |
+| `driver`       | core   | `DriverObservation`, `DriverObservationProvider`, `EyeState`, `HeadPose(State)`, `YawnLikeState`, `ObservationQuality`, `PerclosValue`, `DriverState(Analyzer)`, `TemporalDriverStateAnalyzer`, `SyntheticDriverObservationProvider` | 4.3 |
+| `risk`         | core   | Legacy `RiskEngine`/`RiskInput`/`BaselineRiskEngine` retained; Stage 4.2 `RoadRiskEvaluator`/`RoadRiskEngine`, `RoadRiskSnapshot`, `RiskLevel`/`RiskReason`; Stage 4.3 `DriverRiskEngine(Snapshot)`, `CombinedRiskEngine(Snapshot/Processor)` | 0 / 4.2 / 4.3 |
+| `config`       | core   | `ZholSafeConfig` root + `DetectorConfig`, `TrackingConfig`, `RiskConfig`, `DriverGuardConfig`, `CombinedRiskConfig`, `NetworkConfig` | 0 / 4.3 |
 | `pipeline`     | core   | Ports: `FrameSource`, `LatestFrameQueue`, `AlertSink`, `HazardEventPublisher`, `PipelineState` | 0 |
 | `logging`      | core   | `ZLog` façade + standard `Event` names                                          | 0 |
 | `camera`       | app    | `RoadCamera`, `DriverCamera` (CameraX → `Frame`)                                | 1 |
@@ -100,7 +100,14 @@ CameraX ImageProxy ──(camera analysis executor)──► CameraFrameAdapter 
    ──► TrajectoryEstimator.estimate → TrajectorySnapshot (Stage 4.0 IMAGE ONLY)
    ──► PhysicalEstimationProcessor → PhysicalEstimationSnapshot (Stage 4.1 diagnostics)
    ──► RoadRiskEngine → RoadRiskSnapshot (Stage 4.2 engineering diagnostic ONLY)
-   ──► [DriverGuard fusion / AlertSink / HazardEventPublisher: future, NOT connected in 4.2]
+   ──► [AlertSink / HazardEventPublisher: future, NOT connected]
+
+Stage 4.3 driver pipeline (separate FramePipeline of the same shape, NOT in the road processor):
+Driver FrameSource ──► LatestFrameQueue (single slot, drop-oldest) ──► DriverGuardProcessor
+   ──► DriverObservationProvider.provide(Frame) → DriverObservation
+   ──► TemporalDriverStateAnalyzer.update → DriverState (source-time temporal evidence)
+   ──► DriverRiskEngine.evaluate → DriverRiskSnapshot
+   ──► CombinedRiskProcessor.updateRoad/updateDriver → CombinedRiskEngine → CombinedRiskSnapshot
 ```
 
 **Detection ≠ Risk.** A detection states presence; risk is a function of class weight,
@@ -299,12 +306,23 @@ max frame level; failures have **no** level, not NORMAL. Geometry is an approxim
 trapezoid, not lane detection; metric and optical TTC remain distinct. Engineering scores are
 NOT collision probabilities and are not alerts. See `docs/STAGE4_2_RISK_ENGINE.md`.
 
-## 6. DriverGuard (deferred Stage 4.3)
+## 6. DriverGuard (Stage 4.3) and road/driver risk fusion
 
-`DriverDetector` (per-frame, deferred Stage 4.3) → `DriverObservation` → `DrowsinessAnalyzer` (temporal:
-eye-closure duration, PERCLOS window, recent yawn) → `DriverState` → `RiskInput`.
-All thresholds live in `DriverGuardConfig` and are **experimental demo values, not medical or
-regulatory thresholds** (stated in code and docs).
+Backend-agnostic observation port (`DriverObservationProvider`; deterministic
+`SyntheticDriverObservationProvider` shipped, `DriverDetector` as the model-lifecycle variant for a
+future MediaPipe landmark backend — NOT VERIFIED) → `DriverObservation` (continuous per-eye
+openness, optional mouth/head evidence, explicit unavailability) →
+`TemporalDriverStateAnalyzer` (source-time eye-closure runs, bounded time-weighted PERCLOS-like
+window, yawn-like and head-direction persistence, missing ≠ open/closed, duplicate/reversed
+timestamp rejection) → `DriverState` → driver-only `DriverRiskEngine` → `DriverRiskSnapshot`
+(structured reasons mandatory for non-NORMAL; engineering severity, not a medical statement).
+Fusion: `CombinedRiskEngine` — deterministic max-matrix with the WARNING+WARNING⇒CRITICAL
+escalation (`COMBINED_HAZARD_ESCALATION`), source-time freshness/skew budgets
+(`CombinedRiskConfig`, `STALE_*`/`ROAD_DRIVER_TIMESTAMP_SKEW` reasons) and explicit single-source
+degraded modes (`ROAD_ONLY`/`DRIVER_ONLY`/`UNAVAILABLE`). All thresholds live in
+`DriverGuardConfig`/`CombinedRiskConfig` and are **experimental demo values, not medical or
+regulatory thresholds** (stated in code and docs). DriverGuard is an engineering prototype, NOT a
+medical diagnostic or clinically validated microsleep detector. Detail: `docs/STAGE4_3_DRIVERGUARD.md`.
 
 ## 7. Risk Engine
 

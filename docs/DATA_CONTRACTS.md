@@ -95,31 +95,94 @@ VEHICLE_SENSOR, SCALE_CHANGE`.
 
 Invariants: `confidence` finite in [0,1]; `ageFrames >= 0`; available distance/TTC `>= 0`.
 
-## DriverObservation (per frame) — `kz.zholsafe.driver.DriverObservation`
+## DriverObservation (per frame) — `kz.zholsafe.driver.DriverObservation` (Stage 4.3)
 
-`faceDetected, eyesClosedAvailable, eyesClosed, eyeOpenness (NaN if none), headPose
-(HeadPose.UNAVAILABLE if none), yawnAvailable, yawning, confidence, timestampNanos`.
-`DriverObservation.noFace(ts)` is the canonical "nothing seen" value.
+Immutable, one frame, source-time based, produced by a `DriverObservationProvider`. Continuous
+per-eye openness and mouth-open score replace the Stage 0 binary `eyesClosed`/`yawning` flags so
+thresholds stay configurable in `DriverGuardConfig`. `DriverObservation.noFace(ts)` is the
+canonical "nothing seen" value; `withTimestamp(ts)` re-tags measurements for synthetic/replay
+providers. No `Frame`/image/bitmap/tensor is retained (reflection-enforced in tests).
 
-## DriverState (temporal) — `kz.zholsafe.driver.DriverState`
+| Field | Type | Unavailable representation |
+|-------|------|----------------------------|
+| timestampNanos | long ≥ 0 | (always a real source time) |
+| faceDetected | boolean | `false` (≠ "eyes open", ≠ "asleep") |
+| eyeOpennessAvailable | boolean | `false` ⇒ both openness values NaN |
+| leftEyeOpenness / rightEyeOpenness | float ∈ [0,1] | NaN when unavailable |
+| mouthAvailable / mouthOpenScore | boolean / float ∈ [0,1] | NaN when unavailable |
+| headPose | HeadPose | `HeadPose.UNAVAILABLE` (`available=false`) |
+| confidence | float ∈ [0,1] | 0 + downstream confidence gating |
 
-Invariants: `eyeClosureDurationMillis >= 0`; `confidence` finite in [0,1];
-`perclosAvailable=true ⇒ perclos` finite in [0,1]; `perclosAvailable=false ⇒ perclos == NaN`.
+Invariants: values finite and in [0,1] when the matching availability flag is true; NaN when
+false; **0.0 is a real measurement** ("fully closed"), never "unavailable"; face-derived
+measurements cannot exist without a face.
 
-| Field                    | Type     | Unavailable representation |
-|--------------------------|----------|----------------------------|
-| faceDetected             | boolean  | false |
-| eyesClosed               | boolean  | false (only true when known closed) |
-| eyeClosureDurationMillis | long ≥0  | 0 |
-| perclosAvailable         | boolean  | false |
-| perclos                  | float    | NaN when `perclosAvailable=false` |
-| headPose                 | HeadPose | `HeadPose.UNAVAILABLE` (`available=false`) |
-| yawningDetected          | boolean  | false |
-| confidence               | float    | 0 |
-| timestampNanos           | long     | |
+## EyeState / HeadPoseState / YawnLikeState / ObservationQuality — enums (Stage 4.3)
 
-`DriverState.unavailable(ts)` marks "DriverGuard produced nothing"; the Risk Engine then adds
-`DRIVER_STATE_UNAVAILABLE` (informational) rather than assuming an alert driver.
+`EyeState ∈ {OPEN, PARTIALLY_CLOSED, CLOSED, UNKNOWN}` — UNKNOWN means "no usable eye evidence"
+and is never counted as open or closed. `HeadPoseState ∈ {FORWARD, LEFT, RIGHT, DOWN, UNKNOWN}` —
+UNKNOWN is never FORWARD. `YawnLikeState ∈ {NONE, MOUTH_OPEN, YAWN_LIKE, UNAVAILABLE}` —
+YAWN_LIKE requires configured persistence; engineering naming, not a medical yawn.
+`ObservationQuality ∈ {GOOD, DEGRADED, UNAVAILABLE}` — monitoring-quality grade, not driver
+condition.
+
+## PerclosValue — `kz.zholsafe.driver.PerclosValue` (Stage 4.3)
+
+Bounded-window time-weighted PERCLOS-like engineering metric: `value` = valid closed-eye segment
+time / valid observed-eye segment time over `[now − perclosWindowSeconds, now]`, from source-time
+segment durations (never frame counts). `available=false ⇒ value == NaN` (insufficient coverage
+is NEVER reported as 0.0). Exposes `validObservationDurationNanos` and `windowDurationNanos`;
+`valid ≤ window` always. Availability requires valid time ≥ `minimumPerclosValidCoverage ×
+configured window` (maturity + coverage in one rule).
+
+## DriverState (temporal) — `kz.zholsafe.driver.DriverState` (Stage 4.3)
+
+Produced by the `DriverStateAnalyzer` from accepted observations only (duplicate/reversed
+timestamps are explicitly rejected via `timestampRejection` and change nothing else).
+
+| Field | Type | Unavailable representation |
+|-------|------|----------------------------|
+| timestampNanos | long ≥ 0 | latest ACCEPTED observation source time |
+| faceDetected | boolean | false |
+| eyeState | EyeState | UNKNOWN |
+| continuousEyeClosureNanos | long ≥ 0 | 0 (requires CLOSED eyes when > 0) |
+| perclos | PerclosValue | `available=false`, value NaN |
+| headPoseState | HeadPoseState | UNKNOWN |
+| continuousHeadAwayNanos | long ≥ 0 | 0 |
+| headPose | HeadPose | `HeadPose.UNAVAILABLE` |
+| yawnLikeState | YawnLikeState | UNAVAILABLE |
+| continuousYawnLikeNanos / continuousFaceLossNanos / continuousEyeUnavailableNanos | long ≥ 0 | 0 |
+| observationQuality | ObservationQuality | UNAVAILABLE |
+| confidence | float ∈ [0,1] | 0 |
+| timestampRejection | enum | NONE / DUPLICATE_TIMESTAMP / REVERSED_TIMESTAMP |
+
+Coherence invariants (constructor-enforced): closure > 0 ⇒ CLOSED; no face ⇒ UNKNOWN eyes/head,
+UNAVAILABLE yawn, unavailable pose. `DriverState.unavailable(ts)` marks "DriverGuard produced
+nothing". Legacy accessors (`eyesClosed()`, `eyeClosureDurationMillis()`, `perclosAvailable()`,
+`yawningDetected()`) keep the Stage 0 `BaselineRiskEngine` source-compatible.
+
+## DriverRiskSnapshot — `kz.zholsafe.risk.DriverRiskSnapshot` (Stage 4.3)
+
+`timestampNanos, status ∈ {READY, NOT_STARTED, UNAVAILABLE}, Optional<RiskLevel> level,
+List<DriverRiskReason> reasons, DriverState driverState`. READY ⇒ level present, state timestamp
+shared, non-NORMAL ⇒ ≥1 reason; non-READY ⇒ no level/reasons (failure is never silently NORMAL).
+Level is engineering severity — NOT a probability of falling asleep, NOT a medical claim.
+Reason codes: `EYES_CLOSED`, `PROLONGED_EYE_CLOSURE`, `HIGH_PERCLOS`, `YAWN_LIKE_EVENT`,
+`HEAD_AWAY`, `LOOKING_DOWN`, `FACE_NOT_DETECTED`, `DRIVER_VISIBILITY_LOST`,
+`INSUFFICIENT_EYE_VISIBILITY`, `LOW_OBSERVATION_QUALITY`, `DRIVER_STATE_UNAVAILABLE`.
+
+## CombinedRiskSnapshot — `kz.zholsafe.risk.CombinedRiskSnapshot` (Stage 4.3)
+
+`evaluationTimestampNanos (= max of component source times), status ∈ {READY, ROAD_ONLY,
+DRIVER_ONLY, UNAVAILABLE}, Optional<RiskLevel> roadLevel / driverLevel / combinedLevel,
+roadTimestampNanos, driverTimestampNanos, List<CombinedRiskReason> reasons,
+RoadRiskSnapshot roadRisk, DriverRiskSnapshot driverRisk`. Both component snapshots are preserved.
+UNAVAILABLE ⇒ no level, non-empty explanation (degraded is not NORMAL); ROAD_ONLY/DRIVER_ONLY ⇒
+combined equals the preserved source level; READY ⇒ both levels present; any combined level above
+max(road, driver) ⇒ `COMBINED_HAZARD_ESCALATION` present (enforced). Freshness/skew degradation
+carries `STALE_ROAD_STATE` / `STALE_DRIVER_STATE` / `ROAD_DRIVER_TIMESTAMP_SKEW`; source
+unavailability carries `ROAD_UNAVAILABLE` / `DRIVER_UNAVAILABLE`; contribution context carries
+`ROAD_HAZARD_PRESENT` / `DRIVER_RISK_PRESENT` / `DRIVER_IMPAIRMENT_WITH_ROAD_HAZARD`.
 
 ## VehicleContext — `kz.zholsafe.risk.VehicleContext`
 
@@ -353,3 +416,16 @@ LOW-quality image evidence but must not invent metric values. LOST/tentative tra
 from active object risk. Each per-object score is a deterministic engineering severity indicator,
 not a statistically calibrated probability or a driver-facing warning. See
 `docs/STAGE4_2_RISK_ENGINE.md` for formula, defaults, policy gates and synthetic examples.
+
+## Stage 4.3 — DriverGuard + combined risk contracts (in-process, engineering only)
+
+Stage 4.3 refactored the Stage 0 driver placeholders **in place** (`DriverObservation`,
+`DriverState`, `DriverGuardConfig`; `DrowsinessAnalyzer` renamed to `DriverStateAnalyzer`) and
+added the contracts documented in their own sections above (`EyeState`, `HeadPoseState`,
+`YawnLikeState`, `ObservationQuality`, `PerclosValue`, `DriverRiskSnapshot`,
+`CombinedRiskSnapshot`, plus `DriverGuardConfig`/`CombinedRiskConfig`). Every temporal duration
+is source-time; duplicate/reversed source timestamps are rejected explicitly; all thresholds are
+EXPERIMENTAL demo values; every non-NORMAL driver/combined risk carries structured reasons; any
+fusion escalation above both components carries `COMBINED_HAZARD_ESCALATION`; degraded fusion is
+never NORMAL. DriverGuard outputs are engineering signals — no medical diagnosis, no clinically
+validated microsleep detection. See `docs/STAGE4_3_DRIVERGUARD.md`.

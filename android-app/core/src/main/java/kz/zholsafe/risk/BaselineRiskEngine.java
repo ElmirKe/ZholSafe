@@ -84,7 +84,7 @@ public final class BaselineRiskEngine implements RiskEngine {
                 risk = Math.max(risk, config.driverWeights().prolongedEyeClosure());
             }
         }
-        if (d.perclosAvailable() && d.perclos() >= config.driverGuard().perclosWarningFraction()) {
+        if (d.perclosAvailable() && d.perclos().value() >= config.driverGuard().perclosWarningFraction()) {
             reasons.add(RiskReason.DRIVER_HIGH_PERCLOS);
             risk = Math.max(risk, config.driverWeights().highPerclos());
         }

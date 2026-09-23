@@ -10,11 +10,12 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 4.2 experimental explainable road-risk diagnostics implemented in pure Java; Android/device and physical accuracy NOT VERIFIED. No production alerts.**
+> **Status: Stage 4.3 DriverGuard (temporal driver-state analysis, driver-only risk) and deterministic road/driver risk fusion implemented in pure Java; JVM tests written but NOT EXECUTED in the authoring sandbox (no JVM); Android/device, real driver camera and landmark backend NOT VERIFIED. No production alerts.**
 > Stage 2.5 verified real YOLO11n inference on desktop/JVM (tested weights upstream provenance
 > UNCONFIRMED). Model binaries are not committed. See `docs/STAGE2_5_REAL_MODEL_TEST.md`,
 > `docs/STAGE3_TRACKING.md`, `docs/STAGE4_0_TRAJECTORY.md`,
-> `docs/STAGE4_1_DISTANCE_TTC.md`, `docs/STAGE4_2_RISK_ENGINE.md` and `docs/ROADMAP.md`.
+> `docs/STAGE4_1_DISTANCE_TTC.md`, `docs/STAGE4_2_RISK_ENGINE.md`,
+> `docs/STAGE4_3_DRIVERGUARD.md` and `docs/ROADMAP.md`.
 
 ## Architecture in one picture
 
@@ -22,8 +23,12 @@ Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 Road camera → LatestFrameQueue → RoadDetector → ObjectTracker
                                          → ImageTrajectory → PhysicalDiagnostics
                                          → RoadRiskSnapshot (diagnostic only; no alerts)
+Driver frames → DriverObservationProvider → TemporalDriverStateAnalyzer
+                                         → DriverState → DriverRiskSnapshot
+RoadRiskSnapshot + DriverRiskSnapshot → CombinedRiskEngine → CombinedRiskSnapshot
+                                         (rule matrix, freshness budgets, degraded modes)
 
-Future only: DriverGuard → combined risk / AlertManager; ZholNet events → optional cloud map.
+Future only: AlertManager on the combined risk; ZholNet events → optional cloud map.
 ```
 
 Stage 4.2 is road-object-only. Its physical diagnostics use explicit calibration (none
@@ -34,6 +39,16 @@ AlertSink. Without calibration, metric depth/range-rate/TTC remain unavailable, 
 evaluator may use LOW-quality image evidence. Its severity score is **NOT a collision
 probability**. The eventual local alert path must work offline; it is not connected here.
 Details: `docs/ARCHITECTURE.md` and `docs/STAGE4_2_RISK_ENGINE.md`.
+
+Stage 4.3 adds the driver side and the fusion layer in the same pure-Java spirit:
+`DriverObservationProvider` (backend-agnostic port; deterministic synthetic provider shipped;
+MediaPipe/ML Kit NOT integrated), `TemporalDriverStateAnalyzer` (source-time eye closure,
+bounded time-weighted PERCLOS, yawn-like and head-direction persistence, explicit
+missing-vs-open/closed semantics), `DriverRiskEngine` (driver-only, explainable) and
+`CombinedRiskEngine` (deterministic rule matrix, source-time freshness budgets, degraded
+single-source modes). DriverGuard is an engineering prototype — **not** a medical diagnostic or
+clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo values. Details:
+`docs/STAGE4_3_DRIVERGUARD.md`.
 
 ## Technologies
 
@@ -51,7 +66,7 @@ Details: `docs/ARCHITECTURE.md` and `docs/STAGE4_2_RISK_ENGINE.md`.
 
 | Directory          | Responsibility |
 |--------------------|----------------|
-| `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking, Stage 4.0 image trajectory, Stage 4.1 physical diagnostics and Stage 4.2 road-only risk, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
+| `android-app/core` | Pure-Java contracts, road detection, Stage 3 tracking, Stage 4.0 image trajectory, Stage 4.1 physical diagnostics, Stage 4.2 road-only risk, Stage 4.3 DriverGuard temporal analysis + driver-only risk + combined road/driver risk fusion, configuration, pipeline ports, baseline `RiskEngine`, unit tests |
 | `android-app/app`  | Android Java app: CameraX road pipeline + engineering overlay; alerts, location and ZholNet client deferred |
 | `zholnet-server`   | Spring Boot server: health endpoint, hazard event DTO + validator, module boundaries |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
@@ -95,7 +110,8 @@ python3 scripts/check_contracts.py
 2/2.1 RoadGuard ONNX detection ✔ (code/JVM) → 2.5 real YOLO11n desktop/JVM smoke ✔
 (Android pending) → 3 RoadGuard tracking ✔ (code/JVM; device pending) → 4.0 image-space trajectory ✔ (code/JVM) →
 4.1 experimental distance/TTC foundation ✔ (code/JVM; real calibration/device pending) →
-4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) → 4.3 DriverGuard (deferred) →
+4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) →
+4.3 DriverGuard + road/driver risk fusion ✔ (code; **JVM tests written, NOT EXECUTED here — no JVM**; device/backend pending) →
 5 ZholNet server + PostGIS → 6 Integration/WebSocket/map → 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy
