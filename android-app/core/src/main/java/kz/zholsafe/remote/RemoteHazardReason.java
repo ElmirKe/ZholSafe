@@ -1,0 +1,6 @@
+package kz.zholsafe.remote;
+
+public enum RemoteHazardReason {
+    FRESH, WITHIN_FETCH_RADIUS, NEAR, MEDIUM_DISTANCE, FAR,
+    AHEAD, LATERAL, HEADING_UNAVAILABLE, HIGH_NETWORK_SEVERITY
+}

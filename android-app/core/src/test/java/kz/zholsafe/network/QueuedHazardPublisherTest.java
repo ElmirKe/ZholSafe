@@ -60,6 +60,26 @@ class QueuedHazardPublisherTest {
         }
     }
 
+    @Test void successfulPublicationNotifiesSelfEventMemory() throws Exception {
+        CountDownLatch registered = new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> id = new java.util.concurrent.atomic.AtomicReference<>();
+        ZholNetClient success = new ZholNetClient() {
+            @Override public CompletionStage<ClientResult<NearbyHazard>> publishHazard(NetworkHazardEvent event) {
+                return CompletableFuture.completedFuture(ClientResult.success(null, 201));
+            }
+            @Override public CompletionStage<ClientResult<List<NearbyHazard>>> getNearbyHazards(NearbyQuery query) {
+                return CompletableFuture.completedFuture(ClientResult.success(List.of(), 200));
+            }
+        };
+        try (QueuedHazardPublisher publisher = new QueuedHazardPublisher(success,
+                new RetryQueueConfig(2, 1, Duration.ZERO, Duration.ofMinutes(2)),
+                Clock.fixed(NOW, ZoneOffset.UTC), eventId -> { id.set(eventId); registered.countDown(); })) {
+            publisher.enqueue(event("published-id"));
+            assertTrue(registered.await(1, TimeUnit.SECONDS));
+            assertEquals("published-id", id.get());
+        }
+    }
+
     private static QueuedHazardPublisher publisher(ZholNetClient client, int capacity, int attempts) {
         return new QueuedHazardPublisher(client, new RetryQueueConfig(capacity, attempts,
                 Duration.ZERO, Duration.ofMinutes(2)), Clock.fixed(NOW, ZoneOffset.UTC));

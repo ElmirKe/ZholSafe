@@ -10,7 +10,9 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
-> **Status: Stage 6.0 Android ZholNet client foundation implemented: validated foreground location,
+> **Status: Stage 6.1 second-vehicle remote advisory implemented: bounded nearby polling,
+> geodesic freshness/direction filtering, self-event suppression and a separate Android UI panel.
+> Stage 6.0 Android ZholNet client foundation remains implemented: validated foreground location,
 > local-risk hazard bridge, asynchronous HTTP publish/nearby client and bounded metadata retry.
 > Stage 5 ZholNet server is implemented with Java 21, Spring Boot,
 > PostgreSQL/PostGIS, bounded REST nearby queries, server-time TTL, conservative deduplication and
@@ -74,7 +76,7 @@ clinically validated microsleep detector. All thresholds are EXPERIMENTAL demo v
 
 | Directory          | Responsibility |
 |--------------------|----------------|
-| `android-app/core` | Pure-Java local pipeline plus Stage 6.0 location/network contracts, hazard bridge, async client and bounded retry foundation |
+| `android-app/core` | Pure-Java local pipeline plus Stage 6.0 client foundation and Stage 6.1 remote advisory evaluation/polling |
 | `android-app/app`  | Android Java app: CameraX pipeline, fused foreground location adapter, private random source token and post-risk ZholNet wiring |
 | `zholnet-server`   | Stage 5 Spring Boot server: validation, JPA/PostGIS persistence, TTL/dedup, nearby REST, STOMP notifications, Actuator health |
 | `ai-training`      | Python tooling: class registry, training/validation/export entry points, tests |
@@ -99,7 +101,7 @@ docker compose up --build                              # health: /actuator/healt
 cd android-app && gradle :core:test
 #   or without Gradle: scripts/jvm-fallback-build.sh (see header for required env vars)
 
-# Android app (includes Stage 6.0 supplementary ZholNet bridge; local risk remains offline).
+# Android app (includes Stage 6.0 bridge and Stage 6.1 remote advisory; local risk remains offline).
 # No model binaries are committed: place a legitimate export under models/road/<id>/ first
 # (models/README.md) or the app reports MODEL NOT AVAILABLE. Local/offline inference only.
 # Open android-app/ in Android Studio (SDK 34), or run Gradle `:app:assembleDebug`.
@@ -121,7 +123,7 @@ python3 scripts/check_contracts.py
 4.2 explainable road-only risk diagnostics ✔ (code/JVM; field validation pending) →
 4.3 DriverGuard + road/driver risk fusion ✔ (code/JVM; device/backend pending) →
 5 ZholNet server + PostGIS ✔ (code/unit tests; real PostGIS runtime pending) →
-6.0 Android ZholNet client foundation ✔ (device/real server pending) → 6.1/6.2 advisory UI/map →
+6.0 Android ZholNet client foundation ✔ → 6.1 remote advisory ✔ (device/real server pending) → 6.2 map → 6.3 demo integration →
 7 Testing, profiling, audit. See `docs/ROADMAP.md`.
 
 ## Honesty policy

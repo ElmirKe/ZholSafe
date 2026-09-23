@@ -30,6 +30,7 @@ import kz.zholsafe.location.LocationFix;
 import kz.zholsafe.location.LocationQuality;
 import kz.zholsafe.location.SyntheticLocationProvider;
 import kz.zholsafe.network.*;
+import kz.zholsafe.remote.*;
 import okhttp3.OkHttpClient;
 
 import java.time.Clock;
@@ -56,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private PreviewView previewView;
     private DetectionOverlayView overlay;
     private TextView telemetryText;
+    private TextView remoteHazardText;
     private Button modeButton;
     private Button retryButton;
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -65,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     private SyntheticLocationProvider syntheticLocation;
     private RoadHazardNetworkCoordinator networkCoordinator;
     private QueuedHazardPublisher networkPublisher;
+    private RemoteHazardPoller remotePoller;
 
     private final Runnable refresh = new Runnable() {
         @Override
@@ -72,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
             telemetryText.setText(controller.renderTelemetry());
             overlay.setSnapshot(controller.latestTracking());
             dispatchLatestHazardMetadata();
+            renderRemoteHazard();
             ui.postDelayed(this, UI_REFRESH_MS);
         }
     };
@@ -84,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         overlay = findViewById(R.id.detectionOverlay);
         overlay.setSupportedScaleType(previewView.getScaleType());
         telemetryText = findViewById(R.id.telemetryText);
+        remoteHazardText = findViewById(R.id.remoteHazardText);
         modeButton = findViewById(R.id.modeButton);
         retryButton = findViewById(R.id.retryButton);
 
@@ -110,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         if (controller.mode() == ZholSafeConfig.OperatingMode.LIVE && hasCameraPermission()) {
             startLocationIfPermitted();
         }
+        remotePoller.start();
         ui.post(refresh);
     }
 
@@ -117,12 +123,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         ui.removeCallbacks(refresh);
         controller.stop();
+        remotePoller.stop();
         androidLocation.close();
         super.onStop();
     }
 
     @Override protected void onDestroy() {
-        networkPublisher.close();
+        remotePoller.close(); networkPublisher.close();
         super.onDestroy();
     }
 
@@ -192,13 +199,25 @@ public class MainActivity extends AppCompatActivity {
         SourceTimeMapper time = new SourceTimeMapper(System.nanoTime(), Instant.now());
         AnonymousSourceIdProvider source = new SharedPreferencesAnonymousSourceIdProvider(this);
         HazardEventBridge bridge = new HazardEventBridge(PublicationPolicy.defaults(), source, time);
-        ZholNetClient client = new OkHttpZholNetClient(new OkHttpClient(),
+        RemoteHazardConfig remoteConfig = RemoteHazardConfig.defaults();
+        OkHttpClient http = new OkHttpClient.Builder()
+                .callTimeout(remoteConfig.requestTimeout()).build();
+        ZholNetClient client = new OkHttpZholNetClient(http,
                 BuildConfig.ZHOLNET_BASE_URL, new HazardJsonCodec());
-        networkPublisher = new QueuedHazardPublisher(client, RetryQueueConfig.defaults(), Clock.systemUTC());
-        networkCoordinator = new RoadHazardNetworkCoordinator(
+        Clock clock = Clock.systemUTC();
+        RecentPublishedEventRegistry ownEvents = RecentPublishedEventRegistry.defaults(clock);
+        networkPublisher = new QueuedHazardPublisher(client, RetryQueueConfig.defaults(), clock,
+                ownEvents::register);
+        kz.zholsafe.location.LocationProvider selectedLocation =
                 () -> controller.mode() == ZholSafeConfig.OperatingMode.DEMO
-                        ? syntheticLocation.latestFix() : androidLocation.latestFix(),
+                        ? syntheticLocation.latestFix() : androidLocation.latestFix();
+        networkCoordinator = new RoadHazardNetworkCoordinator(
+                selectedLocation,
                 bridge, networkPublisher);
+        RemoteHazardEvaluator evaluator = new RemoteHazardEvaluator(remoteConfig, ownEvents, clock);
+        RemoteHazardCoordinator remoteCoordinator = new RemoteHazardCoordinator(evaluator, remoteConfig, clock);
+        remotePoller = new RemoteHazardPoller(selectedLocation, client, remoteCoordinator,
+                remoteConfig, clock, System::nanoTime);
     }
 
     private void startLocationIfPermitted() {
@@ -223,6 +242,18 @@ public class MainActivity extends AppCompatActivity {
                     LocationQuality.PRECISE));
         }
         networkCoordinator.afterLocalRisk(risk, tracking, physical);
+    }
+
+    private void renderRemoteHazard() {
+        RemoteHazardSnapshot snapshot = remotePoller.latest();
+        remoteHazardText.setText(RemoteHazardDisplayText.render(snapshot));
+        int color = snapshot.selected().map(warning -> switch (warning.level()) {
+            case WARNING -> 0xCCB71C1C;
+            case CAUTION -> 0xCCEF6C00;
+            case INFO -> 0xCC263238;
+        }).orElse(snapshot.status() == RemoteHazardSnapshot.Status.NETWORK_UNAVAILABLE
+                ? 0xCC455A64 : 0xCC263238);
+        remoteHazardText.setBackgroundColor(color);
     }
 
     private void updateButtons() {

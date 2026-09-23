@@ -23,6 +23,7 @@ public final class QueuedHazardPublisher implements AutoCloseable {
     private final ZholNetClient client;
     private final RetryQueueConfig config;
     private final Clock clock;
+    private final PublishedEventListener publishedListener;
     private final ScheduledExecutorService worker;
     private final Deque<Pending> queue = new ArrayDeque<>();
     private boolean running;
@@ -30,15 +31,26 @@ public final class QueuedHazardPublisher implements AutoCloseable {
     private String lastFailure;
 
     public QueuedHazardPublisher(ZholNetClient client, RetryQueueConfig config, Clock clock) {
+        this(client, config, clock, PublishedEventListener.none());
+    }
+
+    public QueuedHazardPublisher(ZholNetClient client, RetryQueueConfig config, Clock clock,
+                                 PublishedEventListener publishedListener) {
         this(client, config, clock, Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "zholnet-publisher"); t.setDaemon(true); return t;
-        }));
+        }), publishedListener);
     }
 
     QueuedHazardPublisher(ZholNetClient client, RetryQueueConfig config, Clock clock,
                           ScheduledExecutorService worker) {
+        this(client, config, clock, worker, PublishedEventListener.none());
+    }
+
+    QueuedHazardPublisher(ZholNetClient client, RetryQueueConfig config, Clock clock,
+                          ScheduledExecutorService worker, PublishedEventListener publishedListener) {
         this.client = Objects.requireNonNull(client); this.config = Objects.requireNonNull(config);
         this.clock = Objects.requireNonNull(clock); this.worker = Objects.requireNonNull(worker);
+        this.publishedListener = Objects.requireNonNull(publishedListener);
     }
 
     public synchronized EnqueueResult enqueue(NetworkHazardEvent event) {
@@ -85,6 +97,7 @@ public final class QueuedHazardPublisher implements AutoCloseable {
         if (closed || queue.isEmpty() || queue.peekFirst() != sent) { running = false; return; }
         queue.removeFirst();
         boolean failed = thrown != null || result == null || !result.successful();
+        if (!failed) publishedListener.onPublished(sent.event().eventId());
         if (failed && sent.attempts() + 1 < config.maximumAttempts()
                 && !stale(sent.event(), clock.instant())) {
             queue.addFirst(new Pending(sent.event(), sent.attempts() + 1));

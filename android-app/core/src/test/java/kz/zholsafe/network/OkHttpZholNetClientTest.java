@@ -49,4 +49,13 @@ class OkHttpZholNetClientTest {
         assertEquals(500, result.httpStatus());
         assertNotNull(result.error());
     }
+
+    @Test void malformedNearbyJsonIsExplicitFailure() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("not-json"));
+        ClientResult<List<NearbyHazard>> result = client.getNearbyHazards(
+                new NearbyQuery(43.2, 76.9, 500, null, null, Set.of(), 10))
+                .toCompletableFuture().get(3, TimeUnit.SECONDS);
+        assertFalse(result.successful());
+        assertEquals("Invalid ZholNet response", result.error());
+    }
 }

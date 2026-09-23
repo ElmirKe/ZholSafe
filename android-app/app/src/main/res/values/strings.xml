@@ -10,4 +10,5 @@
     <string name="status_camera_unavailable">Camera unavailable.</string>
     <string name="status_gps_unavailable">GPS unavailable — local detection continues.</string>
     <string name="status_zholnet_offline">ZholNet offline — local warnings continue.</string>
+    <string name="status_remote_waiting">ZHOLNET\nОжидание</string>
 </resources>
