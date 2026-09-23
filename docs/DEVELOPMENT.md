@@ -155,3 +155,16 @@ clearly if a model is missing.
 
 - Work on the assigned branch; commit small, descriptive changes.
 - Do not commit datasets, model binaries, build outputs or credentials (see `.gitignore`).
+
+## Real-model smoke test (Stage 2.5)
+
+```bash
+cd android-app && ./gradlew :smoke-test:run --args="--model-dir ../models/road/yolo11n \
+    --input ../demo/stage2_5/images --manifest ../demo/stage2_5/test-manifest.json --output ../demo/stage2_5/results"
+#   fallback without Gradle: scripts/run-smoke-test.sh (env: ZS_JAVA, ZS_ECJ, ZS_ORT_JAR, ZS_ORT_NATIVE)
+#   reference comparison:    ai-training/validation/reference_compare.py (needs ultralytics)
+```
+
+Requires a real `models/road/yolo11n/model.onnx` (git-ignored; produce it with
+`ai-training/export/export_onnx.py`, expected SHA-256 in `model-manifest.json`). Results are a
+DESKTOP/JVM smoke test — never quote them as Android performance or as accuracy.

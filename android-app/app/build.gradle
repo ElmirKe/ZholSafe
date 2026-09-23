@@ -50,11 +50,12 @@ tasks.register('syncModelAssets', Copy) {
 }
 preBuild.dependsOn syncModelAssets
 
-// Centralised runtime versions (Stage 2).
-def onnxRuntimeVersion = '1.19.2'
+// ONNX Runtime version is centralised in :ort-adapter (Stage 2.5).
+def onnxRuntimeVersion = project(':ort-adapter').ext.onnxRuntimeVersion
 
 dependencies {
     implementation project(':core')
+    implementation project(':ort-adapter')
 
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'

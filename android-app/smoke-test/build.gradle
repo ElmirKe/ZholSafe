@@ -1,0 +1,34 @@
+// Stage 2.5 desktop/JVM smoke-test harness: runs the PRODUCTION detector chain
+// (OnnxRoadDetector → Nv21Preprocessor → OrtTensorSession/ONNX Runtime → decoder → NMS → LabelMap)
+// against a real ONNX model and real JPEG/PNG images. Not shipped in the Android app.
+plugins {
+    id 'application'
+}
+
+group = 'kz.zholsafe'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+application {
+    mainClass = 'kz.zholsafe.smoke.SmokeTestRunner'
+    applicationDefaultJvmArgs = ['-Djava.awt.headless=true']
+}
+
+dependencies {
+    implementation project(':core')
+    implementation project(':ort-adapter')
+    // Desktop ONNX Runtime (CPU). Same Java API as onnxruntime-android; version pinned in :ort-adapter.
+    implementation "com.microsoft.onnxruntime:onnxruntime:${project(':ort-adapter').ext.onnxRuntimeVersion}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}

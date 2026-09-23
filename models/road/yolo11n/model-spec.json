@@ -1,7 +1,7 @@
 {
   "modelId": "zholsafe-yolo11n-coco",
   "family": "yolo11",
-  "version": "ultralytics-pretrained-coco (export pending)",
+  "version": "ultralytics-8.2.100-coco-pretrained",
   "modelFile": "model.onnx",
   "labelsFile": "labels.txt",
   "inputName": "images",
@@ -21,16 +21,61 @@
   "numClasses": 80,
   "maxDetections": 50,
   "labelAliases": {},
-  "sha256": null,
+  "sha256": "c95beeaa60349d3558a4ea775da2cb297a94a14d550b17cc8d57fa4b998fbed5",
   "metadata": {
-    "source": "https://github.com/ultralytics/assets/releases (yolo11n.pt) exported with ai-training/export/export_onnx.py --nms false",
-    "exportDate": null,
-    "trainingDataset": "COCO 2017 (80 classes) — pretrained, NOT ZholSafe data",
+    "source": "ultralytics yolo11n.pt (COCO pretrained, ckpt ultralytics 8.2.100) exported with ai-training/export/export_onnx.py --nms false; provenance in model-manifest.json (weights hash UNCONFIRMED vs upstream)",
+    "exportDate": "2026-09-23",
+    "trainingDataset": "COCO 2017 (80 classes) \u2014 pretrained, NOT ZholSafe data",
     "opset": 17,
     "precision": "FP32",
-    "expectedOutputShape": [1, 84, 8400],
-    "canonicalClassesSupported": ["PERSON", "DOG", "HORSE", "COW", "SHEEP"],
-    "canonicalClassesNotSupported": ["GOAT", "CAMEL"],
-    "status": "PROVISIONAL — SPEC ONLY — model.onnx NOT PRESENT; sha256 must be filled by the export script"
+    "expectedOutputShape": [
+      1,
+      84,
+      8400
+    ],
+    "canonicalClassesSupported": [
+      "COW",
+      "DOG",
+      "HORSE",
+      "PERSON",
+      "SHEEP"
+    ],
+    "canonicalClassesNotSupported": [
+      "GOAT",
+      "CAMEL"
+    ],
+    "status": "OBSERVED \u2014 real export inspected (onnx graph) and executed (ONNX Runtime 1.19.2 Java, desktop CPU) in Stage 2.5; Android runtime NOT EXECUTED",
+    "fieldProvenance": {
+      "OBSERVED_FROM_GRAPH": [
+        "inputName",
+        "outputName",
+        "inputWidth",
+        "inputHeight",
+        "inputChannels",
+        "layout",
+        "inputType",
+        "numClasses",
+        "decoder",
+        "nmsInModel",
+        "metadata.opset",
+        "metadata.expectedOutputShape",
+        "metadata.precision"
+      ],
+      "OBSERVED_AT_RUNTIME": [
+        "sha256 (verified by OnnxRoadDetector.load)",
+        "metadata.expectedOutputShape (output0 [1,84,8400] returned by OrtSession.run)",
+        "labels index\u2192class mapping (person=0,dog=16,horse=17,sheep=18,cow=19 from graph metadata 'names')"
+      ],
+      "CONFIGURED": [
+        "confidenceThreshold",
+        "iouThreshold",
+        "maxDetections",
+        "labelAliases",
+        "padValue"
+      ],
+      "ASSUMED": [
+        "normalization SCALE_0_1 and letterbox=true (Ultralytics convention; consistent with reference comparison mean IoU 0.959 but not read from the graph)"
+      ]
+    }
   }
 }

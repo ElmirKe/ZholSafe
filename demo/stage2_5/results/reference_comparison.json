@@ -1,0 +1,1857 @@
+{
+  "kind": "REFERENCE ONLY \u2014 official Ultralytics inference on the same ONNX file; not the ZholSafe result",
+  "ultralytics_version": "8.4.160",
+  "conf": 0.35,
+  "iou": 0.45,
+  "imgsz": 640,
+  "matching": "same canonical class, greedy best IoU >= 0.5",
+  "images": [
+    {
+      "filename": "cow_01_herdsman.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9977,
+          "java_conf": 0.8787,
+          "ref_conf": 0.8813,
+          "conf_delta": -0.0026,
+          "java_bbox": [
+            550.3,
+            563.4,
+            1378.3,
+            1617.6
+          ],
+          "ref_bbox": [
+            550.8,
+            563.2,
+            1379.4,
+            1617.4
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9979,
+          "java_conf": 0.3504,
+          "ref_conf": 0.3616,
+          "conf_delta": -0.0112,
+          "java_bbox": [
+            1219.5,
+            663.8,
+            2234.1,
+            1617.7
+          ],
+          "ref_bbox": [
+            1218.9,
+            663.2,
+            2233.4,
+            1617.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "cow_02_road_crossing.jpg",
+      "java_detections": 9,
+      "reference_detections": 9,
+      "matched": 9,
+      "matches": [
+        {
+          "class": "COW",
+          "iou": 0.9703,
+          "java_conf": 0.8862,
+          "ref_conf": 0.8732,
+          "conf_delta": 0.013,
+          "java_bbox": [
+            279.2,
+            210.7,
+            311.8,
+            243.8
+          ],
+          "ref_bbox": [
+            279.0,
+            210.3,
+            311.6,
+            244.0
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9833,
+          "java_conf": 0.8776,
+          "ref_conf": 0.8779,
+          "conf_delta": -0.0003,
+          "java_bbox": [
+            188.1,
+            208.5,
+            256.0,
+            256.4
+          ],
+          "ref_bbox": [
+            188.3,
+            208.3,
+            256.1,
+            256.8
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9612,
+          "java_conf": 0.8544,
+          "ref_conf": 0.8141,
+          "conf_delta": 0.0403,
+          "java_bbox": [
+            89.2,
+            219.5,
+            143.5,
+            251.2
+          ],
+          "ref_bbox": [
+            88.9,
+            219.2,
+            143.5,
+            252.0
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9736,
+          "java_conf": 0.8511,
+          "ref_conf": 0.8479,
+          "conf_delta": 0.0032,
+          "java_bbox": [
+            0.1,
+            221.9,
+            24.0,
+            270.9
+          ],
+          "ref_bbox": [
+            0.2,
+            222.1,
+            24.3,
+            271.2
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9867,
+          "java_conf": 0.792,
+          "ref_conf": 0.79,
+          "conf_delta": 0.002,
+          "java_bbox": [
+            491.8,
+            207.2,
+            539.8,
+            261.1
+          ],
+          "ref_bbox": [
+            491.6,
+            207.5,
+            539.8,
+            261.3
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9419,
+          "java_conf": 0.78,
+          "ref_conf": 0.7663,
+          "conf_delta": 0.0137,
+          "java_bbox": [
+            381.7,
+            217.8,
+            402.7,
+            251.0
+          ],
+          "ref_bbox": [
+            381.6,
+            217.9,
+            403.5,
+            251.5
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.941,
+          "java_conf": 0.6819,
+          "ref_conf": 0.6401,
+          "conf_delta": 0.0418,
+          "java_bbox": [
+            365.0,
+            207.1,
+            390.8,
+            233.0
+          ],
+          "ref_bbox": [
+            365.1,
+            207.1,
+            392.0,
+            233.3
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9413,
+          "java_conf": 0.6515,
+          "ref_conf": 0.693,
+          "conf_delta": -0.0415,
+          "java_bbox": [
+            71.8,
+            233.9,
+            105.0,
+            258.5
+          ],
+          "ref_bbox": [
+            72.0,
+            233.5,
+            106.3,
+            258.5
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9843,
+          "java_conf": 0.6215,
+          "ref_conf": 0.7168,
+          "conf_delta": -0.0953,
+          "java_bbox": [
+            462.4,
+            209.8,
+            498.2,
+            259.0
+          ],
+          "ref_bbox": [
+            462.4,
+            210.2,
+            498.0,
+            258.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "cow_03_field.jpg",
+      "java_detections": 6,
+      "reference_detections": 6,
+      "matched": 6,
+      "matches": [
+        {
+          "class": "COW",
+          "iou": 0.945,
+          "java_conf": 0.8998,
+          "ref_conf": 0.8929,
+          "conf_delta": 0.0069,
+          "java_bbox": [
+            0.0,
+            113.1,
+            763.9,
+            562.9
+          ],
+          "ref_bbox": [
+            0.0,
+            111.8,
+            737.2,
+            571.5
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9573,
+          "java_conf": 0.7968,
+          "ref_conf": 0.7559,
+          "conf_delta": 0.0409,
+          "java_bbox": [
+            932.0,
+            323.3,
+            1004.0,
+            380.6
+          ],
+          "ref_bbox": [
+            933.4,
+            323.8,
+            1004.0,
+            381.5
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9731,
+          "java_conf": 0.7122,
+          "ref_conf": 0.7125,
+          "conf_delta": -0.0003,
+          "java_bbox": [
+            802.5,
+            364.8,
+            914.6,
+            414.4
+          ],
+          "ref_bbox": [
+            802.8,
+            364.0,
+            914.9,
+            414.7
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9511,
+          "java_conf": 0.6465,
+          "ref_conf": 0.622,
+          "conf_delta": 0.0245,
+          "java_bbox": [
+            814.8,
+            334.7,
+            852.6,
+            349.8
+          ],
+          "ref_bbox": [
+            814.9,
+            335.0,
+            852.9,
+            350.1
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.9515,
+          "java_conf": 0.551,
+          "ref_conf": 0.4549,
+          "conf_delta": 0.0961,
+          "java_bbox": [
+            687.8,
+            334.5,
+            745.7,
+            356.8
+          ],
+          "ref_bbox": [
+            687.7,
+            334.9,
+            745.9,
+            357.4
+          ]
+        },
+        {
+          "class": "COW",
+          "iou": 0.97,
+          "java_conf": 0.4096,
+          "ref_conf": 0.4017,
+          "conf_delta": 0.0079,
+          "java_bbox": [
+            856.6,
+            349.9,
+            941.6,
+            385.5
+          ],
+          "ref_bbox": [
+            856.0,
+            349.7,
+            941.7,
+            386.1
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "cow_04_cow_head.jpg",
+      "java_detections": 3,
+      "reference_detections": 3,
+      "matched": 3,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9975,
+          "java_conf": 0.5602,
+          "ref_conf": 0.5685,
+          "conf_delta": -0.0083,
+          "java_bbox": [
+            0.3,
+            132.5,
+            76.7,
+            474.7
+          ],
+          "ref_bbox": [
+            0.3,
+            132.8,
+            76.8,
+            474.8
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9966,
+          "java_conf": 0.4613,
+          "ref_conf": 0.4432,
+          "conf_delta": 0.0181,
+          "java_bbox": [
+            0.2,
+            1.6,
+            177.4,
+            183.3
+          ],
+          "ref_bbox": [
+            0.2,
+            1.6,
+            177.9,
+            183.2
+          ]
+        },
+        {
+          "class": "DOG",
+          "iou": 0.9912,
+          "java_conf": 0.3673,
+          "ref_conf": 0.383,
+          "conf_delta": -0.0157,
+          "java_bbox": [
+            88.8,
+            5.9,
+            584.3,
+            462.6
+          ],
+          "ref_bbox": [
+            89.0,
+            5.9,
+            581.0,
+            461.8
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "dog_01_dirt_road.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "DOG",
+          "iou": 0.987,
+          "java_conf": 0.9199,
+          "ref_conf": 0.9345,
+          "conf_delta": -0.0146,
+          "java_bbox": [
+            229.3,
+            162.0,
+            383.0,
+            280.7
+          ],
+          "ref_bbox": [
+            229.4,
+            161.2,
+            382.9,
+            280.1
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "dog_02_stray.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "DOG",
+          "iou": 0.9683,
+          "java_conf": 0.8851,
+          "ref_conf": 0.919,
+          "conf_delta": -0.0339,
+          "java_bbox": [
+            103.2,
+            118.5,
+            239.2,
+            214.2
+          ],
+          "ref_bbox": [
+            102.9,
+            116.9,
+            240.2,
+            214.8
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "dog_03_bengaluru.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "DOG",
+          "iou": 0.9955,
+          "java_conf": 0.9322,
+          "ref_conf": 0.9409,
+          "conf_delta": -0.0087,
+          "java_bbox": [
+            160.2,
+            25.8,
+            343.5,
+            328.5
+          ],
+          "ref_bbox": [
+            159.5,
+            25.8,
+            343.5,
+            328.3
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "dog_04_black_dog_person_bg.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "COW",
+          "iou": 0.9752,
+          "java_conf": 0.8496,
+          "ref_conf": 0.8375,
+          "conf_delta": 0.0121,
+          "java_bbox": [
+            167.9,
+            140.0,
+            258.7,
+            242.9
+          ],
+          "ref_bbox": [
+            166.4,
+            139.6,
+            258.7,
+            243.4
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9025,
+          "java_conf": 0.7202,
+          "ref_conf": 0.792,
+          "conf_delta": -0.0718,
+          "java_bbox": [
+            146.9,
+            148.5,
+            172.6,
+            215.7
+          ],
+          "ref_bbox": [
+            146.8,
+            147.7,
+            174.9,
+            215.8
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_01_sign_only.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9875,
+          "java_conf": 0.8529,
+          "ref_conf": 0.6678,
+          "conf_delta": 0.1851,
+          "java_bbox": [
+            542.6,
+            232.0,
+            646.9,
+            304.6
+          ],
+          "ref_bbox": [
+            542.3,
+            231.8,
+            647.2,
+            304.3
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_02_carriage.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9826,
+          "java_conf": 0.8542,
+          "ref_conf": 0.8686,
+          "conf_delta": -0.0144,
+          "java_bbox": [
+            320.7,
+            249.2,
+            446.0,
+            411.7
+          ],
+          "ref_bbox": [
+            319.9,
+            247.7,
+            446.1,
+            411.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_03_amish_carriage.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9533,
+          "java_conf": 0.8705,
+          "ref_conf": 0.8847,
+          "conf_delta": -0.0142,
+          "java_bbox": [
+            312.6,
+            211.2,
+            420.6,
+            364.4
+          ],
+          "ref_bbox": [
+            312.4,
+            206.4,
+            421.7,
+            365.2
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_04_fence.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9729,
+          "java_conf": 0.9141,
+          "ref_conf": 0.9116,
+          "conf_delta": 0.0025,
+          "java_bbox": [
+            508.5,
+            60.0,
+            591.0,
+            152.9
+          ],
+          "ref_bbox": [
+            509.2,
+            60.2,
+            589.9,
+            152.6
+          ]
+        },
+        {
+          "class": "HORSE",
+          "iou": 0.9858,
+          "java_conf": 0.7744,
+          "ref_conf": 0.654,
+          "conf_delta": 0.1204,
+          "java_bbox": [
+            231.3,
+            35.4,
+            433.8,
+            170.5
+          ],
+          "ref_bbox": [
+            231.1,
+            36.0,
+            435.0,
+            170.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_05_portrait.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9682,
+          "java_conf": 0.9092,
+          "ref_conf": 0.9037,
+          "conf_delta": 0.0055,
+          "java_bbox": [
+            134.8,
+            349.7,
+            395.0,
+            1043.6
+          ],
+          "ref_bbox": [
+            129.8,
+            352.3,
+            395.9,
+            1039.2
+          ]
+        },
+        {
+          "class": "HORSE",
+          "iou": 0.9673,
+          "java_conf": 0.8875,
+          "ref_conf": 0.8984,
+          "conf_delta": -0.0109,
+          "java_bbox": [
+            427.6,
+            354.7,
+            772.0,
+            1121.3
+          ],
+          "ref_bbox": [
+            428.4,
+            353.1,
+            781.6,
+            1122.3
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_06_woman_leading.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9967,
+          "java_conf": 0.9385,
+          "ref_conf": 0.9319,
+          "conf_delta": 0.0066,
+          "java_bbox": [
+            38.4,
+            124.1,
+            964.0,
+            1373.2
+          ],
+          "ref_bbox": [
+            38.6,
+            123.0,
+            965.5,
+            1373.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "horse_07_herd_sunrise.jpg",
+      "java_detections": 4,
+      "reference_detections": 4,
+      "matched": 4,
+      "matches": [
+        {
+          "class": "HORSE",
+          "iou": 0.9897,
+          "java_conf": 0.8926,
+          "ref_conf": 0.891,
+          "conf_delta": 0.0016,
+          "java_bbox": [
+            84.4,
+            216.0,
+            238.3,
+            368.6
+          ],
+          "ref_bbox": [
+            83.4,
+            216.2,
+            238.0,
+            368.5
+          ]
+        },
+        {
+          "class": "HORSE",
+          "iou": 0.9722,
+          "java_conf": 0.7988,
+          "ref_conf": 0.8307,
+          "conf_delta": -0.0319,
+          "java_bbox": [
+            372.0,
+            173.2,
+            530.5,
+            330.1
+          ],
+          "ref_bbox": [
+            369.0,
+            174.1,
+            530.8,
+            330.4
+          ]
+        },
+        {
+          "class": "HORSE",
+          "iou": 0.9592,
+          "java_conf": 0.7728,
+          "ref_conf": 0.7664,
+          "conf_delta": 0.0064,
+          "java_bbox": [
+            203.8,
+            219.1,
+            372.6,
+            350.3
+          ],
+          "ref_bbox": [
+            204.6,
+            218.1,
+            374.8,
+            352.5
+          ]
+        },
+        {
+          "class": "HORSE",
+          "iou": 0.952,
+          "java_conf": 0.7227,
+          "ref_conf": 0.6982,
+          "conf_delta": 0.0245,
+          "java_bbox": [
+            316.6,
+            195.4,
+            460.4,
+            346.0
+          ],
+          "ref_bbox": [
+            320.7,
+            196.1,
+            458.5,
+            346.3
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "mixed_01_crosswalk_dog_person.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9941,
+          "java_conf": 0.933,
+          "ref_conf": 0.9316,
+          "conf_delta": 0.0014,
+          "java_bbox": [
+            412.5,
+            1.7,
+            615.0,
+            264.5
+          ],
+          "ref_bbox": [
+            412.9,
+            1.7,
+            615.8,
+            264.5
+          ]
+        },
+        {
+          "class": "DOG",
+          "iou": 0.9925,
+          "java_conf": 0.9188,
+          "ref_conf": 0.9252,
+          "conf_delta": -0.0064,
+          "java_bbox": [
+            82.8,
+            108.6,
+            387.0,
+            334.0
+          ],
+          "ref_bbox": [
+            83.1,
+            108.2,
+            385.7,
+            333.9
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "night_01_person_crossing.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9158,
+          "java_conf": 0.8314,
+          "ref_conf": 0.7865,
+          "conf_delta": 0.0449,
+          "java_bbox": [
+            165.1,
+            164.0,
+            219.2,
+            282.6
+          ],
+          "ref_bbox": [
+            162.1,
+            163.8,
+            219.2,
+            286.5
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "night_02_two_people.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9911,
+          "java_conf": 0.8862,
+          "ref_conf": 0.8822,
+          "conf_delta": 0.004,
+          "java_bbox": [
+            146.4,
+            165.0,
+            192.6,
+            314.8
+          ],
+          "ref_bbox": [
+            146.4,
+            164.5,
+            192.8,
+            315.0
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9787,
+          "java_conf": 0.8651,
+          "ref_conf": 0.8836,
+          "conf_delta": -0.0185,
+          "java_bbox": [
+            193.9,
+            166.3,
+            245.1,
+            315.3
+          ],
+          "ref_bbox": [
+            193.8,
+            166.8,
+            245.8,
+            315.7
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "night_03_woman_bridge.jpg",
+      "java_detections": 2,
+      "reference_detections": 2,
+      "matched": 2,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9872,
+          "java_conf": 0.9182,
+          "ref_conf": 0.901,
+          "conf_delta": 0.0172,
+          "java_bbox": [
+            146.1,
+            113.8,
+            274.3,
+            381.0
+          ],
+          "ref_bbox": [
+            145.4,
+            114.1,
+            274.3,
+            382.7
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.971,
+          "java_conf": 0.5967,
+          "ref_conf": 0.6297,
+          "conf_delta": -0.033,
+          "java_bbox": [
+            76.4,
+            257.0,
+            134.5,
+            359.3
+          ],
+          "ref_bbox": [
+            75.9,
+            257.3,
+            135.1,
+            360.1
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "person_01_sidewalk_portrait.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.8306,
+          "java_conf": 0.6642,
+          "ref_conf": 0.6794,
+          "conf_delta": -0.0152,
+          "java_bbox": [
+            206.2,
+            309.8,
+            299.8,
+            591.2
+          ],
+          "ref_bbox": [
+            190.4,
+            311.6,
+            301.1,
+            594.7
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "person_02_street_portrait_tall.jpg",
+      "java_detections": 1,
+      "reference_detections": 1,
+      "matched": 1,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9768,
+          "java_conf": 0.8493,
+          "ref_conf": 0.855,
+          "conf_delta": -0.0057,
+          "java_bbox": [
+            261.5,
+            380.2,
+            318.7,
+            530.7
+          ],
+          "ref_bbox": [
+            261.8,
+            380.5,
+            319.6,
+            530.8
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "person_03_group_sidewalk.jpg",
+      "java_detections": 11,
+      "reference_detections": 10,
+      "matched": 10,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9756,
+          "java_conf": 0.9019,
+          "ref_conf": 0.8962,
+          "conf_delta": 0.0057,
+          "java_bbox": [
+            68.0,
+            144.5,
+            167.2,
+            330.1
+          ],
+          "ref_bbox": [
+            66.9,
+            144.7,
+            168.2,
+            330.6
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9674,
+          "java_conf": 0.8833,
+          "ref_conf": 0.8656,
+          "conf_delta": 0.0177,
+          "java_bbox": [
+            160.2,
+            115.4,
+            246.7,
+            331.5
+          ],
+          "ref_bbox": [
+            160.5,
+            119.1,
+            247.8,
+            331.5
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9824,
+          "java_conf": 0.8535,
+          "ref_conf": 0.8508,
+          "conf_delta": 0.0027,
+          "java_bbox": [
+            361.5,
+            152.0,
+            429.5,
+            330.7
+          ],
+          "ref_bbox": [
+            360.7,
+            151.7,
+            429.2,
+            330.7
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.8875,
+          "java_conf": 0.8395,
+          "ref_conf": 0.8426,
+          "conf_delta": -0.0031,
+          "java_bbox": [
+            4.1,
+            149.4,
+            67.8,
+            330.7
+          ],
+          "ref_bbox": [
+            3.5,
+            148.7,
+            75.0,
+            330.7
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9355,
+          "java_conf": 0.834,
+          "ref_conf": 0.8127,
+          "conf_delta": 0.0213,
+          "java_bbox": [
+            236.9,
+            171.0,
+            294.1,
+            327.2
+          ],
+          "ref_bbox": [
+            236.7,
+            173.4,
+            292.9,
+            331.5
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9882,
+          "java_conf": 0.8013,
+          "ref_conf": 0.7243,
+          "conf_delta": 0.077,
+          "java_bbox": [
+            293.4,
+            207.1,
+            341.4,
+            332.0
+          ],
+          "ref_bbox": [
+            293.5,
+            206.8,
+            341.6,
+            332.4
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9804,
+          "java_conf": 0.7315,
+          "ref_conf": 0.7607,
+          "conf_delta": -0.0292,
+          "java_bbox": [
+            239.6,
+            125.6,
+            295.5,
+            214.4
+          ],
+          "ref_bbox": [
+            238.9,
+            125.2,
+            295.6,
+            214.5
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9764,
+          "java_conf": 0.6792,
+          "ref_conf": 0.5992,
+          "conf_delta": 0.08,
+          "java_bbox": [
+            49.0,
+            108.4,
+            91.9,
+            212.5
+          ],
+          "ref_bbox": [
+            48.8,
+            107.9,
+            92.4,
+            212.8
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9624,
+          "java_conf": 0.6353,
+          "ref_conf": 0.5926,
+          "conf_delta": 0.0427,
+          "java_bbox": [
+            290.0,
+            136.7,
+            319.8,
+            214.5
+          ],
+          "ref_bbox": [
+            290.2,
+            136.4,
+            320.6,
+            214.4
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9303,
+          "java_conf": 0.4579,
+          "ref_conf": 0.6655,
+          "conf_delta": -0.2076,
+          "java_bbox": [
+            326.5,
+            131.4,
+            380.8,
+            329.3
+          ],
+          "ref_bbox": [
+            323.2,
+            130.5,
+            380.9,
+            330.7
+          ]
+        }
+      ],
+      "java_only": [
+        {
+          "object_class": "PERSON",
+          "model_label": "person",
+          "model_class_index": 0,
+          "confidence": 0.4283,
+          "bbox": [
+            318.1,
+            135.6,
+            356.7,
+            240.0
+          ]
+        }
+      ],
+      "reference_only": []
+    },
+    {
+      "filename": "person_04_elderly_back_portrait.jpg",
+      "java_detections": 3,
+      "reference_detections": 3,
+      "matched": 3,
+      "matches": [
+        {
+          "class": "PERSON",
+          "iou": 0.9976,
+          "java_conf": 0.9227,
+          "ref_conf": 0.9249,
+          "conf_delta": -0.0022,
+          "java_bbox": [
+            100.8,
+            278.0,
+            347.6,
+            749.7
+          ],
+          "ref_bbox": [
+            100.5,
+            277.9,
+            347.4,
+            749.8
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9182,
+          "java_conf": 0.7009,
+          "ref_conf": 0.6716,
+          "conf_delta": 0.0293,
+          "java_bbox": [
+            421.5,
+            340.1,
+            440.8,
+            393.4
+          ],
+          "ref_bbox": [
+            420.8,
+            339.3,
+            441.4,
+            393.1
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.8076,
+          "java_conf": 0.3991,
+          "ref_conf": 0.4624,
+          "conf_delta": -0.0633,
+          "java_bbox": [
+            385.9,
+            335.1,
+            394.1,
+            361.1
+          ],
+          "ref_bbox": [
+            386.6,
+            334.3,
+            394.9,
+            361.2
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "road_empty_01_portrait.jpg",
+      "java_detections": 0,
+      "reference_detections": 0,
+      "matched": 0,
+      "matches": [],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "road_empty_02_fog.jpg",
+      "java_detections": 0,
+      "reference_detections": 0,
+      "matched": 0,
+      "matches": [],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "road_empty_03_forest.jpg",
+      "java_detections": 0,
+      "reference_detections": 0,
+      "matched": 0,
+      "matches": [],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "road_empty_04_dusk_portrait.jpg",
+      "java_detections": 0,
+      "reference_detections": 0,
+      "matched": 0,
+      "matches": [],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "road_empty_05_desert_portrait.jpg",
+      "java_detections": 0,
+      "reference_detections": 0,
+      "matched": 0,
+      "matches": [],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "sheep_01_road_cars.jpg",
+      "java_detections": 9,
+      "reference_detections": 9,
+      "matched": 9,
+      "matches": [
+        {
+          "class": "SHEEP",
+          "iou": 0.986,
+          "java_conf": 0.8916,
+          "ref_conf": 0.8828,
+          "conf_delta": 0.0088,
+          "java_bbox": [
+            506.2,
+            184.3,
+            524.2,
+            212.9
+          ],
+          "ref_bbox": [
+            506.2,
+            184.7,
+            524.2,
+            212.9
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9608,
+          "java_conf": 0.7609,
+          "ref_conf": 0.7649,
+          "conf_delta": -0.004,
+          "java_bbox": [
+            462.5,
+            188.0,
+            482.0,
+            216.0
+          ],
+          "ref_bbox": [
+            462.3,
+            187.7,
+            482.1,
+            216.4
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9652,
+          "java_conf": 0.739,
+          "ref_conf": 0.7264,
+          "conf_delta": 0.0126,
+          "java_bbox": [
+            243.9,
+            190.2,
+            269.7,
+            224.7
+          ],
+          "ref_bbox": [
+            244.1,
+            189.9,
+            269.9,
+            225.1
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9271,
+          "java_conf": 0.7101,
+          "ref_conf": 0.7618,
+          "conf_delta": -0.0517,
+          "java_bbox": [
+            446.3,
+            175.8,
+            475.4,
+            207.8
+          ],
+          "ref_bbox": [
+            446.4,
+            176.2,
+            473.8,
+            207.9
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9649,
+          "java_conf": 0.7039,
+          "ref_conf": 0.6991,
+          "conf_delta": 0.0048,
+          "java_bbox": [
+            267.4,
+            193.1,
+            289.2,
+            222.8
+          ],
+          "ref_bbox": [
+            267.3,
+            193.2,
+            289.3,
+            223.5
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9757,
+          "java_conf": 0.674,
+          "ref_conf": 0.7107,
+          "conf_delta": -0.0367,
+          "java_bbox": [
+            192.1,
+            192.8,
+            222.6,
+            229.5
+          ],
+          "ref_bbox": [
+            192.1,
+            192.5,
+            222.6,
+            228.9
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9492,
+          "java_conf": 0.5883,
+          "ref_conf": 0.6483,
+          "conf_delta": -0.06,
+          "java_bbox": [
+            350.0,
+            172.8,
+            370.0,
+            205.2
+          ],
+          "ref_bbox": [
+            349.7,
+            172.9,
+            370.2,
+            206.0
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.8432,
+          "java_conf": 0.4672,
+          "ref_conf": 0.4343,
+          "conf_delta": 0.0329,
+          "java_bbox": [
+            339.3,
+            181.4,
+            359.5,
+            205.3
+          ],
+          "ref_bbox": [
+            337.6,
+            181.6,
+            359.3,
+            207.1
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.78,
+          "java_conf": 0.3657,
+          "ref_conf": 0.4283,
+          "conf_delta": -0.0626,
+          "java_bbox": [
+            231.6,
+            196.1,
+            246.7,
+            224.9
+          ],
+          "ref_bbox": [
+            230.4,
+            196.6,
+            244.8,
+            225.6
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "sheep_02_zebra_crossing.jpg",
+      "java_detections": 3,
+      "reference_detections": 3,
+      "matched": 3,
+      "matches": [
+        {
+          "class": "SHEEP",
+          "iou": 0.9969,
+          "java_conf": 0.9238,
+          "ref_conf": 0.923,
+          "conf_delta": 0.0008,
+          "java_bbox": [
+            369.5,
+            195.3,
+            528.0,
+            305.6
+          ],
+          "ref_bbox": [
+            369.4,
+            195.4,
+            527.9,
+            305.7
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.983,
+          "java_conf": 0.9092,
+          "ref_conf": 0.9083,
+          "conf_delta": 0.0009,
+          "java_bbox": [
+            210.7,
+            212.6,
+            319.1,
+            310.5
+          ],
+          "ref_bbox": [
+            210.4,
+            213.0,
+            318.1,
+            310.6
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9888,
+          "java_conf": 0.9035,
+          "ref_conf": 0.9098,
+          "conf_delta": -0.0063,
+          "java_bbox": [
+            38.3,
+            223.7,
+            160.2,
+            329.5
+          ],
+          "ref_bbox": [
+            38.2,
+            224.5,
+            160.2,
+            329.8
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    },
+    {
+      "filename": "sheep_03_roadside.jpg",
+      "java_detections": 8,
+      "reference_detections": 8,
+      "matched": 8,
+      "matches": [
+        {
+          "class": "SHEEP",
+          "iou": 0.9782,
+          "java_conf": 0.8238,
+          "ref_conf": 0.8099,
+          "conf_delta": 0.0139,
+          "java_bbox": [
+            415.1,
+            205.3,
+            465.1,
+            241.1
+          ],
+          "ref_bbox": [
+            415.4,
+            205.7,
+            465.2,
+            241.2
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.965,
+          "java_conf": 0.7164,
+          "ref_conf": 0.7148,
+          "conf_delta": 0.0016,
+          "java_bbox": [
+            261.9,
+            203.2,
+            292.6,
+            238.5
+          ],
+          "ref_bbox": [
+            261.9,
+            204.1,
+            292.3,
+            238.5
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9528,
+          "java_conf": 0.6876,
+          "ref_conf": 0.7235,
+          "conf_delta": -0.0359,
+          "java_bbox": [
+            481.8,
+            194.6,
+            524.9,
+            224.6
+          ],
+          "ref_bbox": [
+            482.1,
+            194.7,
+            523.7,
+            224.9
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9233,
+          "java_conf": 0.6476,
+          "ref_conf": 0.6636,
+          "conf_delta": -0.016,
+          "java_bbox": [
+            374.4,
+            210.7,
+            418.7,
+            241.0
+          ],
+          "ref_bbox": [
+            372.1,
+            210.6,
+            419.3,
+            241.4
+          ]
+        },
+        {
+          "class": "PERSON",
+          "iou": 0.9556,
+          "java_conf": 0.6312,
+          "ref_conf": 0.6206,
+          "conf_delta": 0.0106,
+          "java_bbox": [
+            527.0,
+            155.4,
+            545.8,
+            202.0
+          ],
+          "ref_bbox": [
+            526.9,
+            155.7,
+            545.7,
+            200.7
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9531,
+          "java_conf": 0.5463,
+          "ref_conf": 0.6249,
+          "conf_delta": -0.0786,
+          "java_bbox": [
+            346.0,
+            213.6,
+            388.3,
+            243.4
+          ],
+          "ref_bbox": [
+            345.7,
+            213.1,
+            388.5,
+            244.0
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.8856,
+          "java_conf": 0.5181,
+          "ref_conf": 0.538,
+          "conf_delta": -0.0199,
+          "java_bbox": [
+            247.1,
+            209.6,
+            262.9,
+            237.5
+          ],
+          "ref_bbox": [
+            247.7,
+            210.0,
+            263.8,
+            237.9
+          ]
+        },
+        {
+          "class": "SHEEP",
+          "iou": 0.9608,
+          "java_conf": 0.3543,
+          "ref_conf": 0.4009,
+          "conf_delta": -0.0466,
+          "java_bbox": [
+            368.0,
+            213.2,
+            390.2,
+            242.4
+          ],
+          "ref_bbox": [
+            368.5,
+            213.2,
+            389.9,
+            242.5
+          ]
+        }
+      ],
+      "java_only": [],
+      "reference_only": []
+    }
+  ],
+  "summary": {
+    "java_total": 80,
+    "reference_total": 79,
+    "matched": 79,
+    "mean_iou_matched": 0.9591,
+    "min_iou_matched": 0.78,
+    "mean_abs_conf_delta": 0.0289,
+    "max_abs_conf_delta": 0.2076
+  },
+  "tensor_check": {
+    "image": "dog_03_bengaluru.jpg",
+    "mean_abs_diff_vs_ultralytics_preprocess": 0.008054272271692753,
+    "p99_abs_diff": 0.05882352590560913,
+    "max_abs_diff": 0.2823529839515686,
+    "mean_abs_diff_if_channels_were_swapped": 0.11470028012990952,
+    "channel_order_ok": true,
+    "per_channel_mean_java": [
+      0.40102073550224304,
+      0.3334219455718994,
+      0.2332945019006729
+    ],
+    "per_channel_mean_ref": [
+      0.40271705389022827,
+      0.33173733949661255,
+      0.23339177668094635
+    ],
+    "note": "Java path = NV21 round trip + nearest-neighbour; Ultralytics = bilinear RGB; small diffs expected"
+  }
+}

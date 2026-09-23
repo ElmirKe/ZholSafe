@@ -180,7 +180,7 @@ Frame(NV21, rotation, source ts)
     → RoadDetector.detect(frame)                       core interface, Android-free
       = OnnxRoadDetector                               model-agnostic; everything from ModelSpec
         ├─ Nv21Preprocessor: NV21 → RGB, logical rotation, letterbox, normalise → float[] (reused)
-        ├─ TensorSession.run(...)                      ONNX boundary (app: OrtTensorSession over ONNX Runtime)
+        ├─ TensorSession.run(...)                      ONNX boundary (:ort-adapter OrtTensorSession over ONNX Runtime)
         ├─ DetectionDecoder (YoloRawDecoder | YoloEnd2EndDecoder) → RawDetection[] (model-input px)
         ├─ Nms.classAware (only if decoder.requiresNms())
         ├─ LabelMap: model index → label → ObjectClass; unsupported → DROPPED
@@ -192,7 +192,7 @@ Frame(NV21, rotation, source ts)
 |---|---|---|
 | `RoadDetector`, `DetectorState`, `DetectorInfo`, `DetectorTimings`, `DetectionException` | core `ai` | contract; exposes no ORT/ImageProxy/Bitmap/Context |
 | `ModelSpec` + `ModelSpecParser` | core `ai.spec` | one JSON per model dir; consistency validated (e.g. end2end ⇒ nmsInModel) |
-| `TensorSession`, `TensorSessionFactory`, `ModelFiles` | core `ai.infer` | ONNX implementation boundary; app supplies `OrtTensorSession`/`OrtSessionFactory`/`AssetModelFiles` |
+| `TensorSession`, `TensorSessionFactory`, `ModelFiles` | core `ai.infer` | ONNX implementation boundary; `:ort-adapter` (pure JVM, shared by app + smoke-test) supplies `OrtTensorSession`/`OrtSessionFactory`; app supplies `AssetModelFiles` |
 | `Nv21Preprocessor`, `LetterboxTransform` | core `ai.preprocess` | pixel-tested for 0/90/180/270, landscape/portrait/square letterbox, inverse + clamp |
 | `YoloRawDecoder`, `YoloEnd2EndDecoder`, `Nms` | core `ai.decode` | one decoder per real output contract; fail-fast shape validation |
 | `LabelMap` | core `ai` | label-string mapping only; aliases are label→label |
@@ -321,3 +321,15 @@ labelled as demo in the UI; no performance claims may be derived from demo playb
 - Driver model type (classifier vs. landmarks) — Stage 3.
 - Map library for the web monitor (Leaflet planned) — Stage 6.
 - Migration tool for the database (Flyway/Liquibase) — Stage 5.
+
+## Stage 2.5 — module split for the real-model smoke test
+
+```
+:core         pure Java — detector, preprocess, decoders, NMS, LabelMap (unchanged)
+:ort-adapter  pure JVM Java — OrtTensorSession/OrtSessionFactory (ai.onnxruntime.* only, no android.*)
+:app          Android — CameraX, UI, AssetModelFiles; runtime = onnxruntime-android AAR
+:smoke-test   desktop — SmokeTestRunner: JPEG/PNG → NV21 Frame → OnnxRoadDetector → real ORT jar
+```
+
+There is exactly one ORT adapter implementation. The desktop harness proves the production chain
+with a real graph (`docs/STAGE2_5_REAL_MODEL_TEST.md`); it is not shipped in the APK.

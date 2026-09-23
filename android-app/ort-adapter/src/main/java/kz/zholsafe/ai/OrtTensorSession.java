@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link TensorSession} over ONNX Runtime (Java API, {@code onnxruntime-android}). The only class
+ * {@link TensorSession} over ONNX Runtime (Java API; runtime artifact is {@code onnxruntime-android} in the app and {@code onnxruntime} on the JVM). The only class
  * besides {@link OrtSessionFactory} that touches {@code ai.onnxruntime.*}.
  *
  * <p>API usage audited against onnxruntime v1.19.2 Java sources (Stage 2.1):

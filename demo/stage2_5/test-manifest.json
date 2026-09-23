@@ -1,0 +1,509 @@
+{
+  "stage": "2.5",
+  "description": "Smoke-test expectations only (visible target classes) \u2014 NOT ground-truth annotation; NOT usable for mAP.",
+  "obtained": "web image search (Brave) on 2026-09-23 from the sandbox; files as served (preview/thumbnail resolution).",
+  "policy": "committed=true only for Pexels-licensed images; all others were used at test time only and are NOT in the repository (source manifest + sha256 kept).",
+  "images": [
+    {
+      "file": "road_empty_01_portrait.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://www.pexels.com/photo/empty-asphalt-road-932162/",
+      "license": "Pexels License (free to use, redistribution permitted)",
+      "committed": true,
+      "sha256": "d195e01ae475e1d34025ad209930acff0dda86fd592e4e0c6a7c30c67447d85a",
+      "bytes": 41756,
+      "benchmark": true,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY portrait; blue sky; straight road"
+    },
+    {
+      "file": "road_empty_02_fog.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://www.pexels.com/photo/empty-asphalt-road-932162/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "fc5811043829133c42f997ea1e797cbfc794de2c29fc5ee38856b45779d71165",
+      "bytes": 12505,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK/fog; curving road"
+    },
+    {
+      "file": "road_empty_03_forest.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://pexels.com/photo/empty-asphalt-road-in-grass-field-leading-to-mountains-6622365",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "74b3370093279e69915137935055b50723e4fd66dd49192aaf0829b07933b6e8",
+      "bytes": 32659,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY overcast; unusual aspect 500x381"
+    },
+    {
+      "file": "road_empty_04_dusk_portrait.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://www.pexels.com/search/empty%20road/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "96ffb7c27efd4aa327f54e7c928ed3daa64106d54be629c4af08ee682178c7e1",
+      "bytes": 17125,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK dark; portrait"
+    },
+    {
+      "file": "road_empty_05_desert_portrait.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://www.pexels.com/search/empty%20road/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "093036844fe1c45ed5a734e1e33f5c6632b33c51bf448b99aaf899bfbd1e2101",
+      "bytes": 34982,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK desert; portrait"
+    },
+    {
+      "file": "dog_01_dirt_road.jpg",
+      "category": "DOG",
+      "expected": [
+        "DOG"
+      ],
+      "source": "https://www.pexels.com/photo/a-dog-and-puppy-on-the-road-14427066/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "dbe4ae82c0d16cedc86f8a7a9cd2f09065984a432ccc216bcf1590cb76cba590",
+      "bytes": 49270,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; near object"
+    },
+    {
+      "file": "dog_02_stray.jpg",
+      "category": "DOG",
+      "expected": [
+        "DOG"
+      ],
+      "source": "https://www.pexels.com/search/stray%20dog/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "7e6723684ad98a01db48c8338ac1e7cf09cef2cd90c8b8c82dde475158032377",
+      "bytes": 34125,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; mid distance"
+    },
+    {
+      "file": "dog_03_bengaluru.jpg",
+      "category": "DOG",
+      "expected": [
+        "DOG"
+      ],
+      "source": "https://pexels.com/search/stray%20animal",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "4c4be5ef771637420bf65e6c42484a1dcd38b191b837f3aeee8423e0df9ffa7e",
+      "bytes": 38630,
+      "benchmark": true,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; near object, low camera"
+    },
+    {
+      "file": "dog_04_black_dog_person_bg.jpg",
+      "category": "MIXED",
+      "expected": [
+        "DOG",
+        "PERSON"
+      ],
+      "source": "https://pexels.com/search/stray%20animal",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "80e3e6817b89e7a417c8e7925524355de1e5faada6e11fea3b0458f1a8968366",
+      "bytes": 32112,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; black dog near, small distant person; NOTE: images sourced by keyword search \u2014 expectations were set after viewing"
+    },
+    {
+      "file": "person_01_sidewalk_portrait.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://pexels.com/search/person%20walking%20side%20view",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "a491de825c4771f811e9ed0d24e5e1ed39e39f61ed6981a1041ce2ae727bde9c",
+      "bytes": 42207,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; portrait"
+    },
+    {
+      "file": "person_02_street_portrait_tall.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://pexels.com/search/person%20walking%20on%20road/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "fbfb731e6a7d290acb2936aa7dc5dbca229b52e274dec407b77343e909e1297b",
+      "bytes": 58465,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; portrait 500x889 unusual aspect"
+    },
+    {
+      "file": "person_03_group_sidewalk.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://www.pexels.com/search/people%20walking/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "e39dce5d14301a383fd61c9b165c28b192ff57d4c7efaa80c93a90421afd2a94",
+      "bytes": 32867,
+      "benchmark": true,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; many people"
+    },
+    {
+      "file": "person_04_elderly_back_portrait.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://www.pexels.com/search/man%20walking/",
+      "license": "Pexels License",
+      "committed": true,
+      "sha256": "feaa6fdc4a39844161f1b85d13efd631efed227f78984b66d257e151051d38f5",
+      "bytes": 58492,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; portrait; back view"
+    },
+    {
+      "file": "cow_01_herdsman.jpg",
+      "category": "MIXED",
+      "expected": [
+        "COW",
+        "PERSON"
+      ],
+      "source": "https://commons.wikimedia.org/wiki/Category:Cattle_in_Nigeria (A_herds_man_walking_along_the_road_with_a_cow.jpg)",
+      "license": "Wikimedia Commons \u2014 licence not verified offline (commons unreachable); treated as restricted",
+      "committed": false,
+      "sha256": "c1763fbaecfb1958a0905b7ee55708b5471673b00a11830fc9faa903aa19d506",
+      "bytes": 307824,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; B/W photo; near cow + person"
+    },
+    {
+      "file": "cow_02_road_crossing.jpg",
+      "category": "COW",
+      "expected": [
+        "COW"
+      ],
+      "source": "https://stock.adobe.com/search?k=cow+on+the+road",
+      "license": "Adobe Stock preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "c0a875a47a8d8c27c5c69284e102a54b125904727cecdc5c8788ac4c73825334",
+      "bytes": 61888,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; distant cows on road"
+    },
+    {
+      "file": "cow_03_field.jpg",
+      "category": "COW",
+      "expected": [
+        "COW"
+      ],
+      "source": "https://www.discoverwalks.com/blog/world/30-most-famous-cows-in-tv-and-literature/ (1793px-daisy)",
+      "license": "unknown \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "59049a6930230747efb4237db02f94e7f8d82f44939b713fe0ef1ccf7b7cd4c6",
+      "bytes": 62966,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; near cow, not a road scene"
+    },
+    {
+      "file": "cow_04_cow_head.jpg",
+      "category": "COW",
+      "expected": [
+        "COW"
+      ],
+      "source": "https://www.discoverwalks.com/blog/... (640px-bordens_elsie_the_cow)",
+      "license": "unknown \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "4e19ee5cde85338388b8768484b0f0d562337f4bf376aacb38c01517f31319ae",
+      "bytes": 60799,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "indoor; near cow head with people; hard case"
+    },
+    {
+      "file": "horse_01_sign_only.jpg",
+      "category": "ROAD_EMPTY",
+      "expected": [
+        "NONE"
+      ],
+      "source": "https://dreamstime.com/photos-images/horse-crossing.html",
+      "license": "Dreamstime preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "f963387ff56a9710a079e57aea06c5cc217eb403b6bc4b00552747f17a2975a7",
+      "bytes": 62326,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK; horse-crossing SIGN only (pictogram) \u2014 false-positive probe"
+    },
+    {
+      "file": "horse_02_carriage.jpg",
+      "category": "HORSE",
+      "expected": [
+        "HORSE"
+      ],
+      "source": "https://dreamstime.com/photos-images/horse-country-road.html",
+      "license": "Dreamstime preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "727fbfb330039f69ee913165b55ee361ffa77452f0f12285a1fbcb3c9c57dbd4",
+      "bytes": 106143,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; horse-drawn carriage, mid distance"
+    },
+    {
+      "file": "horse_03_amish_carriage.jpg",
+      "category": "HORSE",
+      "expected": [
+        "HORSE"
+      ],
+      "source": "https://dreamstime.com/photos-images/horse-crossing.html",
+      "license": "Dreamstime preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "5c82723abc970f4efaed556649eb8de4af4ca01434eedf4abedbbb3349353d06",
+      "bytes": 85456,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; distant horse + carriage"
+    },
+    {
+      "file": "horse_04_fence.jpg",
+      "category": "HORSE",
+      "expected": [
+        "HORSE"
+      ],
+      "source": "https://gettyimages.com/photos/herd-of-horses-standing",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "039a04f9d41504e4ed47b4f6ed7271d812c0f0daddf951d81aab71b14daad3c4",
+      "bytes": 49195,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; several horses by fence"
+    },
+    {
+      "file": "horse_05_portrait.jpg",
+      "category": "MIXED",
+      "expected": [
+        "HORSE",
+        "PERSON"
+      ],
+      "source": "https://www.pinterest.com/grimgarden/horse-portrait/",
+      "license": "unknown \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "d8a20ba26a70753589ca2011ba9227cee4e24b5338cde9a80e98b177d16e7e08",
+      "bytes": 247096,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "B/W; portrait 830x1250; woman leading horse (near)"
+    },
+    {
+      "file": "horse_06_woman_leading.jpg",
+      "category": "HORSE",
+      "expected": [
+        "HORSE"
+      ],
+      "source": "https://pinterest.com/ideas/horse-looking-to-the-side/",
+      "license": "unknown \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "76d30cc968ee5a41055efca691eebbb752411268c8c3043bdf060f287f6776ea",
+      "bytes": 150958,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; portrait 1195x1412; single near horse, no road"
+    },
+    {
+      "file": "horse_07_herd_sunrise.jpg",
+      "category": "HORSE",
+      "expected": [
+        "HORSE"
+      ],
+      "source": "https://gettyimages.com/photos/herd-of-horses-standing",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "940ce5addbeb4e8d6d2e8d501ccdae71e19ebcb850c55f0d48831a1d71282af9",
+      "bytes": 59491,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK/backlit; herd running"
+    },
+    {
+      "file": "sheep_01_road_cars.jpg",
+      "category": "SHEEP",
+      "expected": [
+        "SHEEP"
+      ],
+      "source": "https://www.gettyimages.com/photos/car-sheep-in-road",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "0ed3b194456471c59d55b080c754473e6a2c16fef403375518c834d2a718c48f",
+      "bytes": 41408,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; distant sheep, cars"
+    },
+    {
+      "file": "sheep_02_zebra_crossing.jpg",
+      "category": "SHEEP",
+      "expected": [
+        "SHEEP"
+      ],
+      "source": "https://www.istockphoto.com/photos/sheep-crossing-road",
+      "license": "iStock preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "e3500648722c38887c76e471d07ead8fc8edce19e97023a1530996797f7531ae",
+      "bytes": 81613,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; near sheep on crossing"
+    },
+    {
+      "file": "sheep_03_roadside.jpg",
+      "category": "MIXED",
+      "expected": [
+        "SHEEP",
+        "PERSON"
+      ],
+      "source": "https://www.istockphoto.com/photos/sheep-crossing-the-road",
+      "license": "iStock preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "7752d1fc9e1cf2939edba5bd094ddb75d40d779d5848951cb6286272e83add8b",
+      "bytes": 59027,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DAY; distant sheep; person next to car (small)"
+    },
+    {
+      "file": "mixed_01_crosswalk_dog_person.jpg",
+      "category": "MIXED",
+      "expected": [
+        "DOG",
+        "PERSON"
+      ],
+      "source": "https://www.magnific.com/free-photos-vectors/dog-crossing",
+      "license": "unknown \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "04420fdba41bf2343963168e0b21d08a41ecccf759d3d0dd6873449969533c06",
+      "bytes": 89838,
+      "benchmark": false,
+      "rotation_test": true,
+      "store_annotated": true,
+      "notes": "DAY; near dog + person legs on crossing"
+    },
+    {
+      "file": "night_01_person_crossing.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://gettyimages.com/photos/pedestrian-crossing-at-night",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "25a61915e20b1701d371cae234695cba7f58298c808be60c9ba87aafb0c6bab2",
+      "bytes": 21769,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "NIGHT; distant person"
+    },
+    {
+      "file": "night_02_two_people.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://gettyimages.com/photos/pedestrian-crossing-at-night",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "eacdaca2bbc0b62903e3083e2c25b47f8bf4723a785f2292d30a07f575228bf6",
+      "bytes": 57811,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "NIGHT; two people, mid distance"
+    },
+    {
+      "file": "night_03_woman_bridge.jpg",
+      "category": "PERSON",
+      "expected": [
+        "PERSON"
+      ],
+      "source": "https://gettyimages.com/photos/pedestrian-crossing-at-night",
+      "license": "Getty preview \u2014 RESTRICTED",
+      "committed": false,
+      "sha256": "761d8b8202e3fe93c9bb0693df66a691269de0b2de8d01ea423003dcb5c77d76",
+      "bytes": 22143,
+      "benchmark": false,
+      "rotation_test": false,
+      "store_annotated": true,
+      "notes": "DUSK; person mid distance"
+    }
+  ]
+}

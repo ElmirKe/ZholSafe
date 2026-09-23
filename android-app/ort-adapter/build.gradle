@@ -1,0 +1,25 @@
+// ONNX Runtime adapter for the core TensorSession boundary. Pure JVM Java: it imports
+// ai.onnxruntime.* (identical Java API in the desktop jar and the Android AAR) and kz.zholsafe.core,
+// but NO android.* classes. It is shared by :app (runtime = onnxruntime-android) and :smoke-test
+// (runtime = desktop onnxruntime), so there is exactly ONE OrtTensorSession implementation.
+plugins {
+    id 'java-library'
+}
+
+group = 'kz.zholsafe'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Single source of truth for the ONNX Runtime version consumed by :app and :smoke-test.
+ext.onnxRuntimeVersion = '1.19.2'
+
+dependencies {
+    api project(':core')
+    // Compile against the Java API only; each consumer supplies the platform-specific runtime
+    // artifact (onnxruntime-android AAR in :app, onnxruntime jar in :smoke-test).
+    compileOnly "com.microsoft.onnxruntime:onnxruntime:${onnxRuntimeVersion}"
+}

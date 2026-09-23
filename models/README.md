@@ -17,7 +17,7 @@ models/road/<model-id>/
 
 | Directory            | Family  | Decoder                        | NMS in model | Status |
 |----------------------|---------|--------------------------------|--------------|--------|
-| `road/yolo11n/`      | YOLO11n | `YOLO_RAW_CXCYWH_NC` [1,84,8400] | no (app NMS) | spec + labels only — **model.onnx NOT PRESENT** |
+| `road/yolo11n/`      | YOLO11n | `YOLO_RAW_CXCYWH_NC` [1,84,8400] | no (app NMS) | spec **OBSERVED** from a real export (Stage 2.5, SHA-256 `c95beeaa…`, see `model-manifest.json`); model.onnx still NOT committed — re-export to reproduce |
 | `road/yolo26n/`      | YOLO26n | `YOLO_END2END_XYXY_CONF_CLS` [1,300,6] | yes | spec + labels only — **model.onnx NOT PRESENT** |
 | `driver/`            | —       | —                              | —            | Stage 3 |
 
