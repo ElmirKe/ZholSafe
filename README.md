@@ -10,6 +10,22 @@ dynamic geospatial risk map.
 
 Target hazards: **horse, cow, sheep, goat, camel, dog, person** (extensible).
 
+## Final MVP status
+
+**Implemented:** road detector architecture; YOLO11n ONNX desktop verification; ByteTrack-inspired
+tracking; image trajectory; physical estimation architecture; RoadRiskEngine; DriverGuard;
+CombinedRisk; ZholNet server; Android hazard publication; and Vehicle B remote advisory.
+
+**Deferred:** Stage 6.2 map/dashboard.
+
+**Unverified/environment-dependent:** physical Android camera/GPS behavior, real-road and night-road
+performance, real PostgreSQL/PostGIS runtime in the current environment, and production safety
+reliability. This is a hackathon prototype, not a certified road-safety or medical system.
+
+**Stage 7 classification:** HACKATHON DEMO READY; PRODUCTION ROAD-SAFETY READY: NO. See
+[`docs/STAGE7_VERIFICATION_REPORT.md`](docs/STAGE7_VERIFICATION_REPORT.md) and
+[`demo/STAGE7_DEMO.md`](demo/STAGE7_DEMO.md).
+
 > **Status: Stage 6.1 second-vehicle remote advisory implemented: bounded nearby polling,
 > geodesic freshness/direction filtering, self-event suppression and a separate Android UI panel.
 > Stage 6.0 Android ZholNet client foundation remains implemented: validated foreground location,
