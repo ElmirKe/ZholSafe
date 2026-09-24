@@ -1,7 +1,7 @@
 # ZholSafe — Android APK for the team
 
-`ZholSafe-debug.apk` — debug build of branch `final` (commit `0b3efbd`), 66 MB.
-SHA-256: `3ed67e0ab0cab9491ff1f312ff74a15048a4d01ad221b9f3d16eb18ab34aab8f`
+`ZholSafe-debug.apk` — debug build of branch `final` (commit `c791aa9`), 66 MB.
+SHA-256: `efe30c5d352a0563bbf1ccdb436df449a41342af753e0b3ea27b752a6f854b47`
 
 ## Install
 1. Copy the APK to an Android phone (Android 8.0+) and open it.
@@ -9,8 +9,11 @@ SHA-256: `3ed67e0ab0cab9491ff1f312ff74a15048a4d01ad221b9f3d16eb18ab34aab8f`
 3. On first start allow camera access.
 
 ## What to try
-- **Camera: driver** (default): face the front camera, wait ~2 s for calibration, then close your
-  eyes for 2 s → red screen + siren + "Проснитесь!".
+- **Camera: driver** (default): face the front camera and keep still while it says
+  "Калибровка…" (~3 s) — it learns YOUR normal eyes (works for narrow eyes too) and head
+  position. Then close your eyes for 2 s → red screen + siren + "Проснитесь!".
+- **Cameras: both**: road + driver at the same time (works on phones with concurrent cameras,
+  e.g. OnePlus CPH2573; other phones show the missing side in grey).
 - Look down for 3 s → "Смотрите на дорогу". Yawn → "Признаки усталости".
 - Cover the camera → grey "Лицо не видно" (never green).
 - **Язык** button: Русский → Қазақша → English.
@@ -19,4 +22,5 @@ SHA-256: `3ed67e0ab0cab9491ff1f312ff74a15048a4d01ad221b9f3d16eb18ab34aab8f`
 - Debug build, not for Google Play.
 - No road model inside: "Camera: road" reports the model as missing. Push an exported model with
   `scripts/install-android.sh <export-dir>` (see docs/STAGE4_4_ANDROID_DRIVER_APP.md).
-- Not yet tested on a real phone — please report what works and what does not.
+- Tested on one phone (OnePlus CPH2573, Android 16): both cameras, face tracking, calibration,
+  road model. Closed-eye alarm after the new calibration not yet confirmed — please report.
