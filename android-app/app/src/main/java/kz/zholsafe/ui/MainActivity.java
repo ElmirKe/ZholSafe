@@ -30,6 +30,7 @@ import kz.zholsafe.ai.OnnxRoadDetector;
 import kz.zholsafe.ai.OrtSessionFactory;
 import kz.zholsafe.alert.AlertController;
 import kz.zholsafe.app.ZholSafeApplication;
+import kz.zholsafe.camera.ConcurrentCameraGroup;
 import kz.zholsafe.camera.LiveCamera;
 import kz.zholsafe.config.DetectorConfig;
 import kz.zholsafe.config.ZholSafeConfig;
@@ -83,6 +84,8 @@ public class MainActivity extends AppCompatActivity {
     private final Map<DriveStatus.Text, String> texts = new EnumMap<>(DriveStatus.Text.class);
     private final Map<DriveStatus.Text, String> russianTexts = new EnumMap<>(DriveStatus.Text.class);
     private final Handler ui = new Handler(Looper.getMainLooper());
+    /** Shared by both cameras in BOTH mode (CameraX concurrent binding); null otherwise. */
+    private ConcurrentCameraGroup cameraGroup;
     private boolean permissionRequestedThisSession;
     private long lastTelemetryAt;
 
@@ -127,9 +130,9 @@ public class MainActivity extends AppCompatActivity {
         PipelineController.Cameras cameras = PipelineController.Cameras.valueOf(
                 prefs.getString(PREF_CAMERAS, PipelineController.Cameras.DRIVER.name()));
         controller = new PipelineController(config.mode(), cameras,
-                () -> new LiveCamera(this, this, previewView, LiveCamera.Lens.ROAD),
+                () -> new LiveCamera(this, this, previewView, LiveCamera.Lens.ROAD, cameraGroup),
                 () -> new OnnxRoadDetector(det.roadModelDir(), files, new OrtSessionFactory(det.executionProvider(), 2)),
-                () -> new LiveCamera(this, this, driverPreviewTarget(), LiveCamera.Lens.DRIVER),
+                () -> new LiveCamera(this, this, driverPreviewTarget(), LiveCamera.Lens.DRIVER, cameraGroup),
                 () -> new MediaPipeDriverObservationProvider(this),
                 config.tracking());
 
@@ -318,6 +321,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         applyPreviewLayout();
+        boolean both = controller.mode() == ZholSafeConfig.OperatingMode.LIVE
+                && controller.cameras() == PipelineController.Cameras.BOTH;
+        cameraGroup = both ? new ConcurrentCameraGroup(this) : null;
         if (controller.mode() == ZholSafeConfig.OperatingMode.DEMO) {
             controller.start();
             return;

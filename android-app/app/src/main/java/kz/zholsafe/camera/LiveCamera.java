@@ -12,6 +12,7 @@ import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
+import androidx.camera.core.UseCaseGroup;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -106,10 +107,22 @@ public final class LiveCamera implements FrameSource, FrameBufferRecycler {
     private ProcessCameraProvider provider;
     private ImageAnalysis analysis;
     @Nullable private Preview preview;
+    @Nullable private final ConcurrentCameraGroup group;
     private long analyzerErrors;
 
     public LiveCamera(@NonNull Context context, @NonNull LifecycleOwner lifecycleOwner,
                       @Nullable PreviewView previewView, @NonNull Lens lens) {
+        this(context, lifecycleOwner, previewView, lens, null);
+    }
+
+    /**
+     * @param group non-null when this camera must stream together with the other lens; the group
+     *              binds both in CameraX concurrent mode (see {@link ConcurrentCameraGroup})
+     */
+    public LiveCamera(@NonNull Context context, @NonNull LifecycleOwner lifecycleOwner,
+                      @Nullable PreviewView previewView, @NonNull Lens lens,
+                      @Nullable ConcurrentCameraGroup group) {
+        this.group = group;
         this.lens = lens;
         this.TAG = "LiveCamera-" + lens;
         this.adapter = new CameraFrameAdapter(lens.source);
@@ -171,12 +184,22 @@ public final class LiveCamera implements FrameSource, FrameBufferRecycler {
                 .build();
         analysis.setAnalyzer(analysisExecutor, this::analyze);
 
+        if (previewView != null) {
+            preview = new Preview.Builder().build();
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+        }
+        if (group != null) {
+            UseCaseGroup.Builder useCases = new UseCaseGroup.Builder().addUseCase(analysis);
+            if (preview != null) {
+                useCases.addUseCase(preview);
+            }
+            group.register(this, lens, selector, useCases.build(), p);
+            return;
+        }
         // Unbind only this source's own use cases: another LiveCamera (the other lens) may be bound.
         try {
             Camera camera;
-            if (previewView != null) {
-                preview = new Preview.Builder().build();
-                preview.setSurfaceProvider(previewView.getSurfaceProvider());
+            if (preview != null) {
                 camera = p.bindToLifecycle(lifecycleOwner, selector, preview, analysis);
             } else {
                 camera = p.bindToLifecycle(lifecycleOwner, selector, analysis);
@@ -224,6 +247,9 @@ public final class LiveCamera implements FrameSource, FrameBufferRecycler {
             return;
         }
         listener = null;
+        if (group != null) {
+            group.unregister(lens);
+        }
         try {
             if (analysis != null) {
                 analysis.clearAnalyzer();
@@ -268,6 +294,12 @@ public final class LiveCamera implements FrameSource, FrameBufferRecycler {
     @Override
     public void recycle(Frame frame) {
         adapter.recycle(frame);
+    }
+
+    /** Called by {@link ConcurrentCameraGroup} when the joint bind is impossible or failed. */
+    @MainThread
+    void failFromGroup(String diagnostic, @Nullable Throwable cause) {
+        fail(diagnostic, cause);
     }
 
     private void fail(String diagnostic, @Nullable Throwable cause) {
