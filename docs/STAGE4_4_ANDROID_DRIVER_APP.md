@@ -13,7 +13,7 @@ Android: **front camera → Face Landmarker → DriverGuard → combined risk �
 | App JVM tests (`DriveStatusTest`) | **EXECUTED** — 14/14 pass |
 | MediaPipe head-pose sign | **CHECKED** on real photos (see below) |
 | Run on a physical phone | **NOT VERIFIED** yet |
-| Road model on device | **NOT VERIFIED** — `model.onnx` still has to be exported (models/README.md) |
+| Road model export | **REPRODUCED** — see below; on-device run NOT VERIFIED |
 | Thresholds | EXPERIMENTAL core defaults, unchanged; no field calibration |
 
 ## Build fixes found by the first real build
@@ -71,6 +71,21 @@ is spoken instead of staying silent. Sound can be muted; vibration and the red s
 `models/driver/face_landmarker.task` (Google AI Edge, Apache-2.0) is not committed, like every
 model binary. `app:fetchFaceModel` downloads it on the first build and verifies SHA-256
 `64184e22…0bc9ff`.
+
+## Road model export (reproduced)
+
+- Official weights `yolo11n.pt` downloaded from the Ultralytics GitHub release v8.3.0: SHA-256
+  `0ebbc80d…644ee1` — **identical** to `model-manifest.json`, so the Stage 2.5 provenance flag
+  "UNCONFIRMED vs upstream" can be resolved.
+- Re-exported with the unchanged team command (ultralytics 8.4.160, torch 2.2.2 — the newest
+  torch for Intel Macs). The graph matches `model-spec.json` field by field (input/output, decoder,
+  classes, opset); only the file bytes differ: SHA-256 `67e1e5bc…96314b` instead of
+  `c95beeaa…fbed5` (the manifest's export used torch 2.14). The committed spec was **not** changed.
+- `:smoke-test` (the production Java chain with real ONNX Runtime) on the 13 committed images gives
+  results **identical** to `demo/stage2_5/results` on 13/13 images, including the known
+  dog→COW confusion.
+- For a device test such an export is pushed into the app's override folder with
+  `scripts/install-android.sh <export-dir>`; the APK assets stay untouched.
 
 ## Build and install
 
