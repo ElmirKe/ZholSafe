@@ -198,6 +198,26 @@ public class DriveStatusTest {
         assertEquals(DriveStatus.Text.DRIVER_CAMERA_TITLE, s.title());
     }
 
+    @Test
+    public void calibrationIsGreyNotGreen() {
+        feed(1, this::open);
+        fusion.updateDriver(guard.latestRisk());
+        DriveStatus s = DriveStatus.from(fusion.evaluate(), true, false,
+                PipelineState.RUNNING, PipelineState.NOT_STARTED, true);
+        assertEquals(DriveStatus.Tone.UNKNOWN, s.tone());
+        assertEquals(DriveStatus.Text.CALIBRATING_TITLE, s.title());
+    }
+
+    @Test
+    public void alarmStillWinsDuringCalibration() {
+        feed(3, this::open);
+        feed(2, this::closed);
+        fusion.updateDriver(guard.latestRisk());
+        DriveStatus s = DriveStatus.from(fusion.evaluate(), true, false,
+                PipelineState.RUNNING, PipelineState.NOT_STARTED, true);
+        assertEquals(DriveStatus.Tone.ALARM, s.tone());
+    }
+
     // ---- road ----
 
     @Test

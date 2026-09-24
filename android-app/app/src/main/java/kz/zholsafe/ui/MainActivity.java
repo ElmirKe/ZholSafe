@@ -185,7 +185,8 @@ public class MainActivity extends AppCompatActivity {
         PipelineController.Cameras cams = controller.cameras();
         DriveStatus status = DriveStatus.from(snap,
                 live && cams.driver(), !live || cams.road(),
-                controller.driverPipelineState(), controller.roadPipelineState());
+                controller.driverPipelineState(), controller.roadPipelineState(),
+                controller.driverCalibrating());
 
         int color = ContextCompat.getColor(this, colorFor(status.tone()));
         statusTitle.setText(texts.get(status.title()));

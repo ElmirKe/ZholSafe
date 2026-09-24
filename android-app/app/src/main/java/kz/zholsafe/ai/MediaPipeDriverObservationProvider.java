@@ -29,7 +29,8 @@ import kz.zholsafe.logging.ZLog;
  *
  * <h2>Mapping to the Stage 4.3 contract</h2>
  * <ul>
- *   <li>eye openness = {@code 1 − eyeBlinkLeft/Right} blendshape score;</li>
+ *   <li>eye openness = {@code 1 − eyeBlinkLeft/Right} blendshape score, divided by the driver's
+ *       own calibrated open-eye level (see "Per-driver calibration");</li>
  *   <li>mouth-open score = {@code jawOpen} blendshape score;</li>
  *   <li>head pose = Euler angles of the facial transformation matrix, converted to the core
  *       convention (see {@link #headPose(float[])}) and taken RELATIVE to the driver's neutral
@@ -37,13 +38,22 @@ import kz.zholsafe.logging.ZLog;
  * </ul>
  * Anything the landmarker did not return is reported as unavailable (NaN + flag), never guessed.
  *
- * <h2>Neutral pose</h2>
- * The matrix is relative to the camera, not to the road: with the phone mounted above the
- * driver's eyes a driver looking straight ahead already reads as ~+30–40° pitch ("down"), which
- * would trip the core's head-down threshold permanently. The first {@value #NEUTRAL_POSE_FRAMES}
- * frames with a face (~2 s) record the driver's usual pose (median yaw/pitch); afterwards the
- * provider reports the deviation from it. Until that calibration is complete the head pose is
- * reported UNAVAILABLE — never a guessed zero.
+ * <h2>Per-driver calibration</h2>
+ * The first {@value #CALIBRATION_FRAMES} frames with a face (~3 s) record the driver's normal state:
+ * <ul>
+ *   <li><b>Eyes.</b> The raw openness of an OPEN eye differs strongly between people: for narrow
+ *       eyes (common in Central Asia) {@code 1 − eyeBlink} is often 0.3–0.5, which the core's fixed
+ *       thresholds (closed &lt; 0.30, partial &lt; 0.60) would read as closed. Openness is therefore
+ *       reported relative to the driver's own open level (median of the calibration frames: the
+ *       typical state, which brief blinks do not move), clamped to [0,1]. A real closure still falls far below
+ *       that level, so the core thresholds keep working unchanged.</li>
+ *   <li><b>Head.</b> The matrix is relative to the camera, not to the road: with the phone mounted
+ *       above the driver's eyes a driver looking straight ahead already reads as ~+30–40° pitch
+ *       ("down"). The median yaw/pitch of the calibration frames is the neutral pose; afterwards
+ *       the deviation from it is reported.</li>
+ * </ul>
+ * Until calibration is complete, eye openness and head pose are reported UNAVAILABLE — never a
+ * guessed value. The calibration is per session (a new provider starts a new one).
  *
  * <h2>Confidence</h2>
  * Face Landmarker exposes no per-face score; it only returns faces whose presence score passed
@@ -60,14 +70,22 @@ public final class MediaPipeDriverObservationProvider implements DriverObservati
     static final float MIN_FACE_PRESENCE = 0.6f;
     private static final String TAG = "MediaPipeDriver";
 
-    static final int NEUTRAL_POSE_FRAMES = 30;
+    static final int CALIBRATION_FRAMES = 45;
+    /** Floor for the calibrated open-eye level, so a bad calibration cannot inflate openness. */
+    static final float MIN_OPEN_LEVEL = 0.15f;
+    private static final int LOG_EVERY_FRAMES = 30;
 
     private final FaceLandmarker landmarker;
-    private final float[] neutralYaw = new float[NEUTRAL_POSE_FRAMES];
-    private final float[] neutralPitch = new float[NEUTRAL_POSE_FRAMES];
-    private int neutralSamples;
+    private final float[] neutralYaw = new float[CALIBRATION_FRAMES];
+    private final float[] neutralPitch = new float[CALIBRATION_FRAMES];
+    private final float[] openSamples = new float[CALIBRATION_FRAMES];
+    private int poseSamples;
+    private int eyeSamples;
     private float baseYaw;
     private float basePitch;
+    private float openLevel;
+    private long frames;
+    private volatile boolean calibrated;
     private int[] argb = new int[0];
     private Bitmap bitmap;
     private long lastTimestampMs = Long.MIN_VALUE;
@@ -127,38 +145,67 @@ public final class MediaPipeDriverObservationProvider implements DriverObservati
             throw new DetectionException("face landmarker failed: " + e.getMessage(), e);
         }
         DriverObservation raw = toObservation(result, frame.timestampNanos());
-        return relativeToNeutralPose(raw);
+        DriverObservation calibrated = calibrate(raw);
+        if (++frames % LOG_EVERY_FRAMES == 0) {
+            ZLog.d(TAG, "raw eyes=" + raw.leftEyeOpenness() + "/" + raw.rightEyeOpenness()
+                    + " calibrated=" + calibrated.leftEyeOpenness() + "/" + calibrated.rightEyeOpenness()
+                    + " openLevel=" + openLevel + " pose=" + calibrated.headPose());
+        }
+        return calibrated;
     }
 
-    /** Replaces the camera-relative head pose with the deviation from the driver's neutral pose. */
-    private DriverObservation relativeToNeutralPose(DriverObservation o) {
+    /**
+     * Converts raw landmarker values into driver-relative ones (see "Per-driver calibration"):
+     * eye openness relative to this driver's open level, head pose relative to the neutral pose.
+     */
+    private DriverObservation calibrate(DriverObservation o) {
         HeadPose pose = o.headPose();
-        if (!pose.available()) {
-            return o;
-        }
-        HeadPose relative;
-        if (neutralSamples < NEUTRAL_POSE_FRAMES) {
-            neutralYaw[neutralSamples] = pose.yawDeg();
-            neutralPitch[neutralSamples] = pose.pitchDeg();
-            neutralSamples++;
-            if (neutralSamples == NEUTRAL_POSE_FRAMES) {
-                baseYaw = median(neutralYaw);
-                basePitch = median(neutralPitch);
-                ZLog.i(TAG, "neutral head pose: yaw=" + baseYaw + " pitch=" + basePitch);
+        HeadPose relativePose = HeadPose.UNAVAILABLE;
+        if (pose.available()) {
+            if (poseSamples < CALIBRATION_FRAMES) {
+                neutralYaw[poseSamples] = pose.yawDeg();
+                neutralPitch[poseSamples] = pose.pitchDeg();
+                if (++poseSamples == CALIBRATION_FRAMES) {
+                    baseYaw = percentile(neutralYaw, 0.5f);
+                    basePitch = percentile(neutralPitch, 0.5f);
+                    ZLog.i(TAG, "neutral head pose: yaw=" + baseYaw + " pitch=" + basePitch);
+                }
+            } else {
+                relativePose = HeadPose.of(pose.yawDeg() - baseYaw, pose.pitchDeg() - basePitch, pose.rollDeg());
             }
-            relative = HeadPose.UNAVAILABLE;
-        } else {
-            relative = HeadPose.of(pose.yawDeg() - baseYaw, pose.pitchDeg() - basePitch, pose.rollDeg());
         }
-        return new DriverObservation(o.timestampNanos(), o.faceDetected(), o.eyeOpennessAvailable(),
-                o.leftEyeOpenness(), o.rightEyeOpenness(), o.mouthAvailable(), o.mouthOpenScore(),
-                relative, o.confidence());
+
+        boolean eyes = false;
+        float left = Float.NaN;
+        float right = Float.NaN;
+        if (o.eyeOpennessAvailable()) {
+            if (eyeSamples < CALIBRATION_FRAMES) {
+                openSamples[eyeSamples] = (o.leftEyeOpenness() + o.rightEyeOpenness()) / 2f;
+                if (++eyeSamples == CALIBRATION_FRAMES) {
+                    openLevel = Math.max(MIN_OPEN_LEVEL, percentile(openSamples, 0.5f));
+                    ZLog.i(TAG, "open-eye level: " + openLevel);
+                }
+            } else {
+                eyes = true;
+                left = clamp(o.leftEyeOpenness() / openLevel);
+                right = clamp(o.rightEyeOpenness() / openLevel);
+            }
+        }
+        calibrated = poseSamples >= CALIBRATION_FRAMES && eyeSamples >= CALIBRATION_FRAMES;
+        return new DriverObservation(o.timestampNanos(), o.faceDetected(), eyes, left, right,
+                o.mouthAvailable(), o.mouthOpenScore(), relativePose, o.confidence());
     }
 
-    private static float median(float[] values) {
+    /** True once the per-driver eye and head calibration is complete (read from any thread). */
+    public boolean calibrated() {
+        return calibrated;
+    }
+
+    /** Value at fraction {@code q} of the sorted samples (0.5 = median). */
+    static float percentile(float[] values, float q) {
         float[] sorted = values.clone();
         java.util.Arrays.sort(sorted);
-        return sorted[sorted.length / 2];
+        return sorted[Math.min(sorted.length - 1, (int) (q * sorted.length))];
     }
 
     static DriverObservation toObservation(FaceLandmarkerResult result, long timestampNanos) {

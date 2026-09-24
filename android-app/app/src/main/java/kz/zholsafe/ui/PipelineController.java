@@ -211,6 +211,15 @@ final class PipelineController {
         return telemetry.snapshot().state();
     }
 
+    /**
+     * True while the driver pipeline runs but its provider is still learning this driver's normal
+     * eyes and head pose (providers without calibration are never "calibrating").
+     */
+    boolean driverCalibrating() {
+        return driverRunning() && driverProvider instanceof kz.zholsafe.ai.MediaPipeDriverObservationProvider
+                && !((kz.zholsafe.ai.MediaPipeDriverObservationProvider) driverProvider).calibrated();
+    }
+
     boolean driverRunning() {
         return driverPipeline != null && driverPipeline.isRunning();
     }

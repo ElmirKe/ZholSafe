@@ -52,6 +52,7 @@ record DriveStatus(Tone tone, Kind kind, Text title, Text detail, Text speech) {
         EYES_CLOSING_TITLE, EYES_CLOSING_DETAIL,
         ROAD_CAUTION_TITLE, ROAD_CAUTION_DETAIL,
         STARTING_TITLE, STARTING_DETAIL,
+        CALIBRATING_TITLE, CALIBRATING_DETAIL,
         OK_TITLE, OK_DETAIL_BOTH, OK_DETAIL_DRIVER, OK_DETAIL_ROAD;
 
         /** Name of the Android string resource holding this text. */
@@ -78,9 +79,15 @@ record DriveStatus(Tone tone, Kind kind, Text title, Text detail, Text speech) {
     /**
      * @param driverExpected the session is supposed to watch the driver (front camera selected)
      * @param roadExpected   the session is supposed to watch the road (rear camera or DEMO)
+     * @param calibrating    the driver provider is still learning this driver's normal eyes/pose
      */
     static DriveStatus from(CombinedRiskSnapshot snap, boolean driverExpected, boolean roadExpected,
                             PipelineState driverPipeline, PipelineState roadPipeline) {
+        return from(snap, driverExpected, roadExpected, driverPipeline, roadPipeline, false);
+    }
+
+    static DriveStatus from(CombinedRiskSnapshot snap, boolean driverExpected, boolean roadExpected,
+                            PipelineState driverPipeline, PipelineState roadPipeline, boolean calibrating) {
         List<DriverRiskReason> driver = snap.driverRisk().reasons();
         RiskLevel driverLevel = snap.driverLevel().orElse(null);
         RiskLevel roadLevel = snap.roadLevel().orElse(null);
@@ -112,6 +119,10 @@ record DriveStatus(Tone tone, Kind kind, Text title, Text detail, Text speech) {
         }
         if (roadExpected && roadPipeline == PipelineState.UNAVAILABLE) {
             return blind(Kind.SYSTEM, Text.ROAD_CAMERA_TITLE, Text.ROAD_CAMERA_DETAIL);
+        }
+        if (driverExpected && calibrating && !driver.contains(DriverRiskReason.DRIVER_VISIBILITY_LOST)) {
+            // Eyes and head are not evaluable yet — say so instead of showing the green state.
+            return blind(Kind.DRIVER_BLIND, Text.CALIBRATING_TITLE, Text.CALIBRATING_DETAIL);
         }
         if (driverExpected && (driver.contains(DriverRiskReason.DRIVER_VISIBILITY_LOST)
                 || driver.contains(DriverRiskReason.FACE_NOT_DETECTED))) {

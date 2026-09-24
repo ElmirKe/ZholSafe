@@ -58,4 +58,6 @@
     <string name="ds_ok_detail_both">Водитель и дорога под наблюдением.</string>
     <string name="ds_ok_detail_driver">Наблюдаю за водителем.</string>
     <string name="ds_ok_detail_road">Наблюдаю за дорогой.</string>
+    <string name="ds_calibrating_title">Калибровка…</string>
+    <string name="ds_calibrating_detail">Смотрите прямо с открытыми глазами 3 секунды. Не двигайте телефон.</string>
 </resources>
